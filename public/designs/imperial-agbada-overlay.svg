@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 750" width="600" height="750">
+  <g transform="translate(300, 360)">
+    
+      <!-- Agbada Wings -->
+      <path d="M-240,240 L-220,-30 L-80,-120 C-40,-135 40,-135 80,-120 L220,-30 L240,240 C160,210 60,195 0,195 C-60,195 -160,210 -240,240 Z" 
+        fill="#191715" stroke="#B89B6A" stroke-opacity="0.85" stroke-width="2"/>
+      
+      <!-- Central Tunic Body -->
+      <path d="M-90,-110 L-90,260 L90,260 L90,-110 C60,-130 -60,-130 -90,-110 Z"
+        fill="#191715" stroke="#B89B6A" stroke-opacity="0.85" stroke-width="1.5"/>
+        
+      <!-- Neck Cutout Curve -->
+      <path d="M-40,-125 C-30,-70 30,-70 40,-125 C25,-140 -25,-140 -40,-125 Z" 
+        fill="none" stroke="#B89B6A" stroke-width="2"/>
+      
+      <!-- Chest Embroidery -->
+      <path d="M-55,-65 L0,-10 L55,-65 L0,-120 Z" stroke="#B89B6A" stroke-width="2.5" fill="none"/>
+      <path d="M-35,-65 L0,-30 L35,-65 L0,-100 Z" stroke="#B89B6A" stroke-width="1.2" stroke-dasharray="3,3" fill="none"/>
+      
+      <!-- Placket down -->
+      <line x1="0" y1="-10" x2="0" y2="220" stroke="#B89B6A" stroke-width="2"/>
+      <circle cx="0" cy="20" r="3" fill="#B89B6A"/>
+      <circle cx="0" cy="60" r="3" fill="#B89B6A"/>
+      <circle cx="0" cy="100" r="3" fill="#B89B6A"/>
+      <circle cx="0" cy="140" r="3" fill="#B89B6A"/>
+    
+  </g>
+</svg>

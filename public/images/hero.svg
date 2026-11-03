@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <linearGradient id="heroBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0E0E0E"/>
+      <stop offset="50%" stop-color="#181614"/>
+      <stop offset="100%" stop-color="#0A0A0A"/>
+    </linearGradient>
+    <linearGradient id="goldSheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D4BC91" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#9A7B48" stop-opacity="0.7"/>
+    </linearGradient>
+    <radialGradient id="spotlight" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0%" stop-color="#B89B6A" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#0E0E0E" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#heroBg)"/>
+  <rect width="1200" height="900" fill="url(#spotlight)"/>
+  
+  <!-- Architectural lines -->
+  <line x1="120" y1="0" x2="120" y2="900" stroke="#F6F3EE" stroke-opacity="0.04" stroke-width="1"/>
+  <line x1="1080" y1="0" x2="1080" y2="900" stroke="#F6F3EE" stroke-opacity="0.04" stroke-width="1"/>
+  <circle cx="600" cy="450" r="320" stroke="#B89B6A" stroke-opacity="0.08" stroke-width="1" fill="none"/>
+  
+  <!-- Stylized Agbada / Garment Silhouette -->
+  <g transform="translate(600, 480)">
+    <!-- Broad Agbada Drape -->
+    <path d="M-280,320 L-260,-40 L-100,-140 L-40,-160 C-20,-170 20,-170 40,-160 L100,-140 L260,-40 L280,320 C200,280 80,260 0,260 C-80,260 -200,280 -280,320 Z" fill="#141312" stroke="#B89B6A" stroke-opacity="0.35" stroke-width="1.5"/>
+    
+    <!-- Chest Embroidery Motif -->
+    <path d="M-70,-110 L0,-40 L70,-110 L0,-180 Z" stroke="url(#goldSheen)" stroke-width="2" fill="none"/>
+    <path d="M-45,-110 L0,-65 L45,-110 L0,-155 Z" stroke="url(#goldSheen)" stroke-width="1" stroke-dasharray="3,3" fill="none"/>
+    <line x1="0" y1="-40" x2="0" y2="180" stroke="url(#goldSheen)" stroke-width="2" stroke-linecap="round"/>
+    
+    <!-- Inner Tunic Placket -->
+    <rect x="-18" y="-60" width="36" height="240" rx="3" fill="#0D0D0D" stroke="#8A847C" stroke-opacity="0.4"/>
+    <circle cx="0" cy="-30" r="3.5" fill="#B89B6A"/>
+    <circle cx="0" cy="10" r="3.5" fill="#B89B6A"/>
+    <circle cx="0" cy="50" r="3.5" fill="#B89B6A"/>
+    <circle cx="0" cy="90" r="3.5" fill="#B89B6A"/>
+    <circle cx="0" cy="130" r="3.5" fill="#B89B6A"/>
+
+    <!-- Geometric West African linework -->
+    <g stroke="#B89B6A" stroke-opacity="0.25" stroke-width="1">
+      <path d="M-180,60 L-140,20 L-100,60"/>
+      <path d="M180,60 L140,20 L100,60"/>
+      <path d="M-220,160 L-160,100 L-100,160"/>
+      <path d="M220,160 L160,100 L100,160"/>
+    </g>
+  </g>
+  
+  <!-- Placeholder label -->
+  <rect x="500" y="830" width="200" height="28" rx="14" fill="#000000" fill-opacity="0.6" stroke="#B89B6A" stroke-opacity="0.3"/>
+  <text x="600" y="848" text-anchor="middle" font-family="'Inter', sans-serif" font-size="10" font-weight="600" letter-spacing="0.2em" fill="#F6F3EE">COLLECTION 2026/27</text>
+</svg>

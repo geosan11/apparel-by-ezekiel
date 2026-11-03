@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atelier Management — Apparel by Ezekiel</title>
+  <meta name="theme-color" content="#0E0E0E" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="/images/logo.svg" />
+  <style>
+    .admin-nav-bar {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--color-border-subtle);
+      margin-bottom: 24px;
+      overflow-x: auto;
+    }
+    .admin-nav-tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--color-text-secondary);
+      padding: 12px 18px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .admin-nav-tab:hover { color: var(--color-text-primary); }
+    .admin-nav-tab.active {
+      color: var(--color-gold);
+      border-bottom-color: var(--color-gold);
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--color-bg-card);
+      border: 1px solid var(--color-border-subtle);
+      padding: 20px;
+      border-radius: 2px;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 4px;
+    }
+    .stat-val {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #F6F3EE;
+      font-family: var(--font-body);
+    }
+    .orders-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+    .orders-table th {
+      padding: 12px 14px;
+      background: var(--color-bg-elevated);
+      color: var(--color-text-secondary);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+    .orders-table td {
+      padding: 14px;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+    .chat-bubble {
+      background: var(--color-bg-elevated);
+      border: 1px solid var(--color-border-subtle);
+      padding: 14px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    .confirm-chip-box {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: rgba(184, 155, 106, 0.12);
+      border: 1px solid var(--color-gold);
+      padding: 12px 16px;
+      border-radius: 2px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body style="background-color: var(--color-bg);">
+
+  <!-- 1. LOGIN SCREEN -->
+  <div id="adminLoginView" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;">
+    <div style="width: 100%; max-width: 440px; background: var(--color-bg-card); border: 1px solid var(--color-border); padding: 36px 32px; border-radius: 2px; box-shadow: var(--shadow-lift);">
+      
+      <div style="text-align: center; margin-bottom: 28px;">
+        <span class="brand-wordmark" style="font-size: 1.35rem;">APPAREL BY <span>EZEKIEL</span></span>
+        <div class="label-caps" style="margin-top: 6px;">Atelier Executive Suite</div>
+      </div>
+
+      <!-- Real Supabase Auth Form (shown when VITE_SUPABASE_URL is configured) -->
+      <form id="supabaseAuthForm" style="display: none; margin-bottom: 20px;">
+        <div style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 16px;">
+          Enter your owner credentials to authenticate via Supabase:
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="authEmail">Owner Email</label>
+          <input type="email" id="authEmail" class="form-input" placeholder="ezekiel@apparelbyezekiel.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="authPassword">Password</label>
+          <input type="password" id="authPassword" class="form-input" placeholder="••••••••" required />
+        </div>
+        <div id="authErrorMessage" style="display: none; color: #D9534F; font-size: 0.82rem; margin-bottom: 12px;"></div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In with Supabase</button>
+      </form>
+
+      <!-- Supabase unconfigured notice -->
+      <div id="supabaseConfigNotice" style="display: none; padding: 12px; background: var(--color-bg-elevated); border: 1px solid var(--color-border-subtle); border-radius: 2px; font-size: 0.82rem; color: var(--color-text-secondary); margin-bottom: 20px;">
+        <strong style="color: var(--color-gold);">Supabase Backend:</strong> Environment variables (<code>VITE_SUPABASE_URL</code> & <code>VITE_SUPABASE_ANON_KEY</code>) are not set. The local IndexedDB engine is active.
+      </div>
+
+      <!-- Prominent Instant Demo Login Button -->
+      <div>
+        <button type="button" id="demoLoginBtn" class="btn btn-primary" style="width: 100%; padding: 14px 20px; font-size: 0.9rem; background: var(--color-gold); color: #0A0A0A; border-color: var(--color-gold);">
+          Instant Demo Login
+        </button>
+        <p style="text-align: center; font-size: 0.78rem; color: var(--color-text-secondary); margin-top: 8px;">
+          Instant access with seeded orders, expenses, and offline IndexedDB data. No password required.
+        </p>
+      </div>
+
+      <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--color-border-subtle); padding-top: 16px;">
+        <a href="/" style="font-size: 0.82rem; color: var(--color-text-secondary); text-decoration: underline;">
+          ← Return to Public Atelier
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. DASHBOARD VIEW -->
+  <div id="adminDashboardView" style="display: none; min-height: 100vh;">
+    <!-- Top Admin Header -->
+    <header style="background: rgba(14, 14, 14, 0.95); border-bottom: 1px solid var(--color-border-subtle); padding: 16px 24px; position: sticky; top: 0; z-index: 40;">
+      <div style="max-width: var(--max-width); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <span class="brand-wordmark" style="font-size: 1.25rem;">APPAREL BY <span>EZEKIEL</span></span>
+          <span id="authModeBadge" class="badge badge-beta">Admin Active</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <a href="/" target="_blank" class="btn btn-outline btn-sm">Public Site ↗</a>
+          <button id="adminLogoutBtn" class="btn btn-outline btn-sm" style="color: #D9534F; border-color: rgba(217, 83, 79, 0.3);">Sign Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container" style="padding-top: 24px; padding-bottom: 64px;">
+      <!-- Tab Navigation -->
+      <nav class="admin-nav-bar" role="tablist">
+        <button class="admin-nav-tab active" data-tab="overview">Overview</button>
+        <button class="admin-nav-tab" data-tab="orders">Orders</button>
+        <button class="admin-nav-tab" data-tab="expenses">Expenses & Chat</button>
+        <button class="admin-nav-tab" data-tab="settings">Backup & Settings</button>
+      </nav>
+
+      <!-- TAB 1: OVERVIEW -->
+      <section id="tab-overview" class="admin-tab-screen">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-val text-gold" id="statRevenue">₦0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-val" id="statTotalOrders">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Deposits Collected</div>
+            <div class="stat-val" id="statDeposits" style="color: #4E9A51;">₦0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Expenses</div>
+            <div class="stat-val" id="statExpenses" style="color: #D9534F;">₦0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Estimated Net Margin</div>
+            <div class="stat-val" id="statNetMargin">₦0</div>
+          </div>
+        </div>
+
+        <!-- This Month Strip -->
+        <div style="background: var(--color-bg-card); border: 1px solid var(--color-border); padding: 18px 24px; border-radius: 2px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <div>
+            <span class="label-caps">Current Month (November 2026)</span>
+            <h3 style="margin-top: 4px;">Atelier Velocity</h3>
+          </div>
+          <div style="display: flex; gap: 24px;">
+            <div>
+              <div class="stat-label">Month Revenue</div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-gold);" id="statMonthRevenue">₦0</div>
+            </div>
+            <div>
+              <div class="stat-label">Month Orders</div>
+              <div style="font-size: 1.25rem; font-weight: 700;" id="statMonthOrders">0</div>
+            </div>
+            <div>
+              <div class="stat-label">Month Expenses</div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: #D9534F;" id="statMonthExpenses">₦0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inbound Bookings Lead List -->
+        <div style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); padding: 20px; border-radius: 2px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="font-size: 1.2rem;">Inbound Website Booking Leads</h3>
+            <span class="badge badge-beta">Syncs to Orders</span>
+          </div>
+          <div id="bookingsLeadList"></div>
+        </div>
+      </section>
+
+      <!-- TAB 2: ORDERS -->
+      <section id="tab-orders" class="admin-tab-screen" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <select id="orderSourceFilter" class="form-select" style="width: auto; padding: 6px 12px;">
+              <option value="all">All Sources</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Instagram">Instagram</option>
+              <option value="Walk-in">Walk-in</option>
+              <option value="Site">Site</option>
+            </select>
+            <select id="orderStatusFilter" class="form-select" style="width: auto; padding: 6px 12px;">
+              <option value="all">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Ready">Ready</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('newOrderModal').classList.add('open')">
+            + Record Manual Order
+          </button>
+        </div>
+
+        <div style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: 2px; overflow-x: auto;">
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th>Order Ref</th>
+                <th>Client</th>
+                <th>Garment / Fitting</th>
+                <th>Source</th>
+                <th>Amount / Deposit</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 3: EXPENSES & CHAT -->
+      <section id="tab-expenses" class="admin-tab-screen" style="display: none;">
+        <div style="display: grid; grid-template-columns: 1fr; gap: 24px;">
+          <!-- Natural Language Expense Chat Box -->
+          <div style="background: var(--color-bg-card); border: 1px solid var(--color-border); padding: 24px; border-radius: 2px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <div>
+                <span class="label-caps">Rule-Based Instant Parser</span>
+                <h3 style="margin-top: 4px;">Smart Expense Chat (No AI Key Needed)</h3>
+              </div>
+              <span class="badge badge-beta">Zero API Cost</span>
+            </div>
+
+            <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 16px;">
+              Type expenditures in Nigerian atelier shorthand. Parses amounts (<code>18k</code>, <code>₦18000</code>, <code>1.5m</code>), categories, and dates (<code>today</code>, <code>yesterday</code>, <code>last friday</code>, <code>2026-11-01</code>).
+            </p>
+
+            <!-- Confirm Chip Preview -->
+            <div id="expenseConfirmChip" class="confirm-chip-box">
+              <div id="confirmChipText" style="font-size: 0.88rem; color: var(--color-text-primary);"></div>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" id="confirmChipSaveBtn" class="btn btn-primary btn-sm">Confirm & Save</button>
+                <button type="button" id="confirmChipCancelBtn" class="btn btn-outline btn-sm">Cancel</button>
+              </div>
+            </div>
+
+            <form id="expenseChatForm" style="display: flex; gap: 8px;">
+              <input type="text" id="expenseChatInput" class="form-input" placeholder='e.g. "Paid 18k for fabric today" or "N18000 fuel last friday"' required />
+              <button type="submit" class="btn btn-primary" style="white-space: nowrap;">Parse & Review</button>
+            </form>
+          </div>
+
+          <!-- Grid: Manual Expense Form & Recent Log -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+            <!-- Manual Form -->
+            <div style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); padding: 20px; border-radius: 2px;">
+              <h4 style="font-size: 1.1rem; margin-bottom: 16px;">Standard Expense Form</h4>
+              <form id="standardExpenseForm">
+                <div class="form-group">
+                  <label class="form-label" for="expAmount">Amount (₦) *</label>
+                  <input type="number" id="expAmount" class="form-input" placeholder="e.g. 25000" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="expCategory">Category *</label>
+                  <select id="expCategory" class="form-select" required>
+                    <option value="fabric">Fabric / Damask / Wool</option>
+                    <option value="thread">Thread / Buttons / Zips</option>
+                    <option value="transport">Transport / T-Fare</option>
+                    <option value="logistics">Logistics / Dispatch / Waybill</option>
+                    <option value="staff">Staff Wages / Artisan Workmanship</option>
+                    <option value="rent">Rent / Workshop Lease</option>
+                    <option value="power/fuel">Power / Generator Fuel / NEPA</option>
+                    <option value="marketing">Marketing / Ads / Photoshoot</option>
+                    <option value="packaging">Packaging / Boxes / Garment Bags</option>
+                    <option value="other">Other / Miscellaneous</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="expDate">Date *</label>
+                  <input type="date" id="expDate" class="form-input" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="expDescription">Description</label>
+                  <input type="text" id="expDescription" class="form-input" placeholder="Supplier or item details..." />
+                </div>
+                <button type="submit" class="btn btn-outline" style="width: 100%;">Record Expense</button>
+              </form>
+            </div>
+
+            <!-- Expense Log -->
+            <div style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: 2px; overflow: hidden; display: flex; flex-direction: column;">
+              <div style="padding: 16px; border-bottom: 1px solid var(--color-border-subtle); background: var(--color-bg-elevated); font-weight: 600; font-size: 0.9rem;">
+                Recorded Expenditures
+              </div>
+              <div id="expensesListContainer" style="max-height: 440px; overflow-y: auto;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: SETTINGS & BACKUP -->
+      <section id="tab-settings" class="admin-tab-screen" style="display: none;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+          <!-- Backup Card -->
+          <div style="background: var(--color-bg-card); border: 1px solid var(--color-border); padding: 24px; border-radius: 2px;">
+            <span class="label-caps">Data Portability</span>
+            <h3 style="margin: 6px 0 12px;">JSON Database Backup</h3>
+            <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 20px;">
+              Export full atelier records (designs, bookings, orders, expenses, and drop subscribers) to a local JSON archive.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <button id="exportBackupBtn" class="btn btn-primary">
+                Export Database JSON
+              </button>
+              
+              <label class="btn btn-outline" style="text-align: center;">
+                Restore from JSON File
+                <input type="file" id="importBackupInput" accept=".json" style="display: none;" />
+              </label>
+
+              <button id="resetDemoDataBtn" class="btn btn-outline" style="color: #D9534F; border-color: rgba(217, 83, 79, 0.3);">
+                Reset to Pristine Demo Data
+              </button>
+            </div>
+          </div>
+
+          <!-- Architecture & NDPA Compliance Card -->
+          <div style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); padding: 24px; border-radius: 2px;">
+            <span class="label-caps">Compliance & Security</span>
+            <h3 style="margin: 6px 0 12px;">Data Layer Specifications</h3>
+            <ul style="padding-left: 20px; font-size: 0.88rem; color: var(--color-text-secondary); display: flex; flex-direction: column; gap: 10px;">
+              <li><strong>Zero Framework Overhead:</strong> Pure Vite vanilla ES modules. Public bundle contains zero admin logic.</li>
+              <li><strong>Offline IndexedDB Cache:</strong> Full persistence and PWA offline usability even with network dropouts.</li>
+              <li><strong>Supabase Integration:</strong> Prepared for PostgreSQL with RLS. Public anon clients can only insert bookings & subscriptions; owner uid controls all records.</li>
+              <li><strong>NDPA 2023 Compliant:</strong> Client contact information is strictly handled without third-party leakages.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Manual Order Modal -->
+  <div class="modal-backdrop" id="newOrderModal" role="dialog" aria-modal="true">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3>Record Manual Client Order</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('newOrderModal').classList.remove('open')">✕</button>
+      </div>
+      <div class="modal-content">
+        <form id="newOrderForm">
+          <div class="form-group">
+            <label class="form-label" for="orderCustomerName">Customer Name *</label>
+            <input type="text" id="orderCustomerName" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="orderCustomerPhone">Phone Number *</label>
+            <input type="tel" id="orderCustomerPhone" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="orderDesignTitle">Garment / Design Title *</label>
+            <input type="text" id="orderDesignTitle" class="form-input" placeholder="e.g. Imperial Agbada (Navy)" required />
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="orderAmount">Total Amount (₦) *</label>
+              <input type="number" id="orderAmount" class="form-input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="orderDepositAmount">Deposit Paid (₦)</label>
+              <input type="number" id="orderDepositAmount" class="form-input" value="0" />
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="orderSource">Channel / Source</label>
+              <select id="orderSource" class="form-select">
+                <option value="WhatsApp">WhatsApp</option>
+                <option value="Instagram">Instagram</option>
+                <option value="Walk-in">Walk-in</option>
+                <option value="Site">Site</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="orderStatus">Status</label>
+              <select id="orderStatus" class="form-select">
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Ready">Ready</option>
+                <option value="Delivered">Delivered</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="orderFittingDate">Fitting Date</label>
+            <input type="date" id="orderFittingDate" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="orderNotes">Measurements / Notes</label>
+            <textarea id="orderNotes" class="form-textarea" placeholder="Chest, length, fabric choices..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Save Order</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/admin/adminApp.js"></script>
+</body>
+</html>

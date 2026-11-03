@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <defs>
+    <linearGradient id="bg-grandeur-tuxedo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1A1816"/>
+      <stop offset="100%" stop-color="#0E0D0C"/>
+    </linearGradient>
+    <radialGradient id="glow-grandeur-tuxedo" cx="0.5" cy="0.45" r="0.5">
+      <stop offset="0%" stop-color="#1A1A1A" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#0E0D0C" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg-grandeur-tuxedo)"/>
+  <rect width="800" height="1000" fill="url(#glow-grandeur-tuxedo)"/>
+  
+  <!-- Subtle Framing -->
+  <rect x="24" y="24" width="752" height="952" fill="none" stroke="#1A1A1A" stroke-opacity="0.12" stroke-width="1"/>
+  
+  <!-- Garment Illustration -->
+  <g transform="translate(400, 520)">
+    
+      <!-- Double-breasted Tuxedo Jacket -->
+      <path d="M-150,260 L-145,-65 L-75,-115 C-45,-125 45,-125 75,-115 L145,-65 L150,260 Z"
+        fill="#EBE5DC" stroke="#0E0E0E" stroke-opacity="0.3" stroke-width="2"/>
+        
+      <!-- Satin Shawl Lapels -->
+      <path d="M-75,-115 C-60,-30 -30,60 -10,95 L10,95 C30,60 60,-30 75,-115 C55,-128 -55,-128 -75,-115 Z"
+        fill="#141414" stroke="#000" stroke-width="1.5"/>
+
+      <!-- Inner Shirt & Bowtie -->
+      <polygon points="0,-105 -25,-65 25,-65" fill="#F8F6F0"/>
+      <!-- Bowtie -->
+      <path d="M-14,-98 L14,-90 L-14,-90 L14,-98 Z" fill="#141414"/>
+
+      <!-- Double breasted buttons -->
+      <circle cx="-25" cy="80" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+      <circle cx="25" cy="80" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+      <circle cx="-25" cy="130" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+      <circle cx="25" cy="130" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+      <circle cx="-25" cy="180" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+      <circle cx="25" cy="180" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+    
+  </g>
+  
+  <!-- Brand and Title Header in SVG -->
+  <text x="400" y="80" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="28" font-weight="600" letter-spacing="0.18em" fill="#F6F3EE">THE GRANDEUR TUXEDO</text>
+  <text x="400" y="108" text-anchor="middle" font-family="'Inter', sans-serif" font-size="11" font-weight="500" letter-spacing="0.25em" fill="#1A1A1A">EZEKIEL BESPOKE ATELIER</text>
+  
+  <!-- Placeholder indicator -->
+  <rect x="300" y="920" width="200" height="26" rx="13" fill="#000000" fill-opacity="0.5" stroke="#1A1A1A" stroke-opacity="0.25"/>
+  <text x="400" y="937" text-anchor="middle" font-family="'Inter', sans-serif" font-size="9" font-weight="500" letter-spacing="0.15em" fill="#8A847C">PREVIEW PLACEHOLDER</text>
+</svg>
