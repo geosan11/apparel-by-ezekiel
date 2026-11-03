@@ -1,0 +1,18 @@
+{
+  "name": "Apparel by Ezekiel Atelier",
+  "short_name": "Ezekiel Admin",
+  "description": "Atelier Management and Bespoke Tailoring Portal",
+  "start_url": "/admin.html",
+  "display": "standalone",
+  "background_color": "#0E0E0E",
+  "theme_color": "#0E0E0E",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
