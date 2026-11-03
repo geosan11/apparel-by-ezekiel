@@ -4,6 +4,8 @@ import path from 'node:path';
 
 import {
   mapNormalizedToImage,
+  parseMoveNetOutput,
+  KEYPOINT_NAMES,
   poseConfidence,
   isUsablePose,
   computePlacement,
@@ -68,6 +70,60 @@ describe('Coordinate Mapping & Padding Helper', () => {
     const bottomRight = mapNormalizedToImage(0.875, 1.0, 600, 800);
     expect(bottomRight.x).toBeCloseTo(600, 5);
     expect(bottomRight.y).toBeCloseTo(800, 5);
+  });
+});
+
+describe('MoveNet Output Parsing (parseMoveNetOutput)', () => {
+  it('parses flat array into 17 named keypoints mapped to original dimensions', () => {
+    // 51 elements: 17 * [y, x, score]
+    // 600w x 800h => maxDim = 800, padX = 100, padY = 0
+    const flat = new Float32Array(51);
+
+    // Keypoint 0: nose at center (normY = 0.5, normX = 0.5, score = 0.95)
+    flat[0] = 0.5; // y
+    flat[1] = 0.5; // x
+    flat[2] = 0.95; // score
+
+    // Keypoint 5: left_shoulder (normY = 0.4, normX = 0.35, score = 0.88)
+    flat[5 * 3 + 0] = 0.4;
+    flat[5 * 3 + 1] = 0.35;
+    flat[5 * 3 + 2] = 0.88;
+
+    // Keypoint 6: right_shoulder (normY = 0.4, normX = 0.65, score = 0.89)
+    flat[6 * 3 + 0] = 0.4;
+    flat[6 * 3 + 1] = 0.65;
+    flat[6 * 3 + 2] = 0.89;
+
+    const keypoints = parseMoveNetOutput(flat, 600, 800);
+
+    expect(keypoints.length).toBe(17);
+    expect(keypoints[0].name).toBe('nose');
+    // Mapped nose: 0.5 * 800 - 100 = 300, 0.5 * 800 - 0 = 400
+    expect(keypoints[0].x).toBe(300);
+    expect(keypoints[0].y).toBe(400);
+    expect(keypoints[0].score).toBe(0.95);
+
+    expect(keypoints[5].name).toBe('left_shoulder');
+    // Mapped left_shoulder: 0.35 * 800 - 100 = 180, 0.4 * 800 - 0 = 320
+    expect(keypoints[5].x).toBeCloseTo(180, 1);
+    expect(keypoints[5].y).toBeCloseTo(320, 1);
+    expect(keypoints[5].score).toBe(0.88);
+
+    expect(keypoints[6].name).toBe('right_shoulder');
+    // Mapped right_shoulder: 0.65 * 800 - 100 = 420, 0.4 * 800 - 0 = 320
+    expect(keypoints[6].x).toBeCloseTo(420, 1);
+    expect(keypoints[6].y).toBeCloseTo(320, 1);
+    expect(keypoints[6].score).toBe(0.89);
+
+    // Verify all 17 names match KEYPOINT_NAMES order
+    const names = keypoints.map((kp) => kp.name);
+    expect(names).toEqual(KEYPOINT_NAMES);
+  });
+
+  it('handles invalid or incomplete input gracefully', () => {
+    expect(parseMoveNetOutput(null, 600, 800)).toEqual([]);
+    expect(parseMoveNetOutput([], 600, 800)).toEqual([]);
+    expect(parseMoveNetOutput(new Float32Array(50), 600, 800)).toEqual([]);
   });
 });
 

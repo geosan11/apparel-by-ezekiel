@@ -306,12 +306,14 @@ async function autoFitUserPhoto(fileOrBlob, modules) {
   try {
     await tryOnInstance.loadUserImage(fileOrBlob);
   } catch (err) {
+    console.warn('[tryon] photo load failed', err);
     setTryOnState('manual', 'Failed to load photo. Manual fit mode is active.', 'load-error');
     return;
   }
 
   // Network & resource fallbacks
   if (!forceLoadModel && navigator.connection?.saveData) {
+    console.warn('[tryon] data saver active, falling back to manual mode');
     setTryOnState(
       'manual',
       'Data Saver is enabled. Manual fit mode active. <button type="button" class="btn btn-outline btn-sm" id="tryonForceLoadBtn" style="margin-left:6px;padding:1px 6px;font-size:0.75rem;">Load fitting model anyway</button>',
@@ -328,6 +330,7 @@ async function autoFitUserPhoto(fileOrBlob, modules) {
   }
 
   if (navigator.deviceMemory && navigator.deviceMemory < 2) {
+    console.warn('[tryon] low device memory detected, falling back to manual mode');
     setTryOnState('manual', 'Low device memory detected. Manual fit mode is active.', 'low-memory');
     return;
   }
@@ -343,6 +346,7 @@ async function autoFitUserPhoto(fileOrBlob, modules) {
       }
     });
   } catch (err) {
+    console.warn('[tryon] pose model load error', err);
     const isUnsupported = err.message && err.message.includes('initialise');
     setTryOnState(
       'manual',
@@ -359,6 +363,7 @@ async function autoFitUserPhoto(fileOrBlob, modules) {
     const usable = isUsablePose(poseResult?.keypoints, tryOnInstance.userImage.width);
 
     if (!usable) {
+      console.warn('[tryon] low confidence pose', { score: poseResult?.score, keypoints: poseResult?.keypoints });
       cachedPoseKeypoints = null;
       setTryOnState('manual', 'No clear pose detected. You can adjust the fit manually.', 'low-confidence');
       return;
@@ -368,6 +373,7 @@ async function autoFitUserPhoto(fileOrBlob, modules) {
     applyPlacementForCurrentDesign(modules);
     setTryOnState('auto', 'Garment fitted automatically to your pose.');
   } catch (err) {
+    console.warn('[tryon] pose failed', err);
     setTryOnState('manual', 'Pose estimation failed. Manual fit mode is active.', 'load-error');
   }
 }

@@ -4,7 +4,7 @@
  */
 
 import { MODEL_BYTES, MODEL_URL } from './modelInfo.js';
-import { KEYPOINT_NAMES, mapNormalizedToImage } from './fit.js';
+import { KEYPOINT_NAMES, mapNormalizedToImage, parseMoveNetOutput } from './fit.js';
 
 let loadedModel = null;
 let modelPromise = null;
@@ -52,7 +52,7 @@ export async function loadPoseModel(options = {}) {
         await tf.ready();
         backendReady = true;
       } catch (err) {
-        console.warn('WebGL backend unavailable, trying CPU:', err);
+        console.warn('[tryon] WebGL backend unavailable, trying CPU:', err);
       }
 
       if (!backendReady) {
@@ -61,6 +61,7 @@ export async function loadPoseModel(options = {}) {
           await tf.ready();
           backendReady = true;
         } catch (cpuErr) {
+          console.warn('[tryon] Both WebGL and CPU backends failed:', cpuErr);
           throw new Error('Both WebGL and CPU TensorFlow backends failed to initialise.');
         }
       }
@@ -91,6 +92,7 @@ export async function loadPoseModel(options = {}) {
     } catch (err) {
       clearTimeout(timeoutId);
       modelPromise = null; // Allow retry on failure
+      console.warn('[tryon] Pose model load error:', err);
       throw err;
     }
   })();
@@ -138,37 +140,25 @@ export async function detectPose(imageBitmapOrCanvas) {
   ctx.drawImage(imageBitmapOrCanvas, offsetX, offsetY, scaledW, scaledH);
 
   // Run prediction with automatic tensor disposal
-  const rawOutput = tf.tidy(() => {
-    // tf.browser.fromPixels produces int32 tensor with shape [192, 192, 3]
-    const pixels = tf.browser.fromPixels(offscreen);
-    const input = pixels.expandDims(0); // [1, 192, 192, 3] int32
-    const output = loadedModel.predict(input); // [1, 1, 17, 3]
-    return Array.from(output.dataSync());
-  });
-
-  // Map 17 keypoints back through padding to photo pixel coordinates
-  const keypoints = [];
-  let totalScore = 0;
-
-  for (let i = 0; i < 17; i++) {
-    const base = i * 3;
-    const normY = rawOutput[base];
-    const normX = rawOutput[base + 1];
-    const score = rawOutput[base + 2];
-
-    const mapped = mapNormalizedToImage(normX, normY, origW, origH);
-
-    keypoints.push({
-      x: mapped.x,
-      y: mapped.y,
-      score: Math.round(score * 1000) / 1000,
-      name: KEYPOINT_NAMES[i]
+  let rawOutput;
+  try {
+    rawOutput = tf.tidy(() => {
+      // tf.browser.fromPixels produces int32 tensor with shape [192, 192, 3]
+      const pixels = tf.browser.fromPixels(offscreen);
+      const input = tf.cast(tf.expandDims(pixels, 0), 'int32'); // [1, 192, 192, 3] int32
+      const output = loadedModel.predict(input); // [1, 1, 17, 3]
+      const tensor = Array.isArray(output) ? output[0] : (output?.dataSync ? output : Object.values(output)[0]);
+      return Array.from(tensor.dataSync());
     });
-
-    totalScore += score;
+  } catch (err) {
+    console.warn('[tryon] Pose detection inference failed:', err);
+    throw err;
   }
 
-  const avgScore = Math.round((totalScore / 17) * 1000) / 1000;
+  // Parse 17 keypoints back through padding to photo pixel coordinates
+  const keypoints = parseMoveNetOutput(rawOutput, origW, origH);
+  const totalScore = keypoints.reduce((sum, kp) => sum + (kp.score || 0), 0);
+  const avgScore = keypoints.length ? Math.round((totalScore / keypoints.length) * 1000) / 1000 : 0;
 
   return {
     keypoints,

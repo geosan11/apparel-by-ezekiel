@@ -198,7 +198,10 @@ function getAllFilesRecursive(dirPath) {
 }
 
 const movenetVendorDir = path.resolve(process.cwd(), 'public', 'vendor', 'movenet');
-const modelFiles = getAllFilesRecursive(movenetVendorDir);
+const modelFiles = getAllFilesRecursive(movenetVendorDir).filter((file) => {
+  const base = path.basename(file);
+  return base === 'model.json' || base.endsWith('.bin');
+});
 
 let modelRawBytes = 0;
 let modelGzBytes = 0;

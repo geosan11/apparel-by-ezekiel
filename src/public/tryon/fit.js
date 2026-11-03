@@ -37,6 +37,42 @@ export function mapNormalizedToImage(normX, normY, imageWidth, imageHeight) {
 }
 
 /**
+ * Parses MoveNet SinglePose Lightning v4 flattened output [1, 1, 17, 3].
+ * Each keypoint has (y, x, score) normalised to the 192x192 padded input.
+ * Returns array of 17 keypoint objects with names, mapped photo pixel coords, and scores.
+ */
+export function parseMoveNetOutput(flatArray, origW, origH) {
+  if (!flatArray || flatArray.length < 51) return [];
+
+  const keypoints = [];
+  let totalScore = 0;
+
+  for (let i = 0; i < 17; i++) {
+    const base = i * 3;
+    const normY = flatArray[base];
+    const normX = flatArray[base + 1];
+    const score = flatArray[base + 2];
+
+    const mapped = mapNormalizedToImage(normX, normY, origW, origH);
+    const roundedScore = Math.round(score * 1000) / 1000;
+
+    keypoints.push({
+      name: KEYPOINT_NAMES[i],
+      x: mapped.x,
+      y: mapped.y,
+      score: roundedScore
+    });
+
+    totalScore += score;
+  }
+
+  keypoints.keypoints = keypoints;
+  keypoints.score = Math.round((totalScore / 17) * 1000) / 1000;
+
+  return keypoints;
+}
+
+/**
  * Safe keypoint lookup by name or index from array or keyed object.
  */
 export function getKeypoint(keypoints, identifier) {
