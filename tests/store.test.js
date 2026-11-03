@@ -102,4 +102,131 @@ describe('IndexedDB Store Adapter (with in-memory fallback)', () => {
     const orders = await indexedDBAdapter.getOrders();
     expect(orders.some((o) => o.customer_name === 'TEST CUSTOMER BACKUP')).toBe(true);
   });
+
+  it('performs CRUD operations on customers via memory fallback', async () => {
+    const initialCustomers = await indexedDBAdapter.getCustomers();
+    expect(initialCustomers.length).toBeGreaterThanOrEqual(7);
+
+    // Verify seeded demo customers have measurements and follow_up
+    const withMeasurements = initialCustomers.find((c) => c.measurements && c.measurements.chest);
+    expect(withMeasurements).toBeDefined();
+    expect(withMeasurements.measurements.chest).toBe(44);
+
+    const withFollowUp = initialCustomers.find((c) => c.follow_up && c.follow_up.due);
+    expect(withFollowUp).toBeDefined();
+    expect(withFollowUp.follow_up.due).toBe(new Date().toISOString().slice(0, 10));
+
+    // Add Customer
+    const added = await indexedDBAdapter.addCustomer({
+      name: 'Adewale Adeleke',
+      phone: '0802 345 6789',
+      source: 'Referral'
+    });
+    expect(added.id).toMatch(/^CUS-/);
+    expect(added.name).toBe('Adewale Adeleke');
+    expect(added.phone_norm).toBe('+2348023456789');
+    expect(added.created_at).toBeDefined();
+    expect(added.updated_at).toBeDefined();
+
+    const afterAdd = await indexedDBAdapter.getCustomers();
+    expect(afterAdd.some((c) => c.id === added.id)).toBe(true);
+
+    // Update Customer
+    const updated = await indexedDBAdapter.updateCustomer(added.id, {
+      notes: 'Prefers navy and dark emerald fabrics.',
+      phone: '+2348029990000'
+    });
+    expect(updated.notes).toBe('Prefers navy and dark emerald fabrics.');
+    expect(updated.phone_norm).toBe('+2348029990000');
+
+    // Delete Customer
+    await indexedDBAdapter.deleteCustomer(added.id);
+    const afterDelete = await indexedDBAdapter.getCustomers();
+    expect(afterDelete.some((c) => c.id === added.id)).toBe(false);
+  });
+
+  it('exportAll v2 includes customers and bumps version to 2', async () => {
+    const backup = await indexedDBAdapter.exportAll();
+    expect(backup.version).toBe(2);
+    expect(backup.data.customers).toBeDefined();
+    expect(Array.isArray(backup.data.customers)).toBe(true);
+    expect(backup.data.customers.length).toBeGreaterThanOrEqual(7);
+  });
+
+  it('import of a v1 backup (no customers key) creates customers via rebuild', async () => {
+    const v1Backup = {
+      version: 1,
+      appName: 'Apparel by Ezekiel',
+      exportedAt: '2026-10-01T12:00:00Z',
+      data: {
+        designs: [],
+        bookings: [],
+        orders: [
+          {
+            id: 'ORD-V1-01',
+            customer_name: 'Senator Kashim',
+            customer_phone: '0803 777 8888',
+            design_title: 'Imperial Agbada',
+            amount: 350000,
+            source: 'WhatsApp',
+            status: 'In Progress'
+          }
+        ],
+        expenses: [],
+        subscribers: []
+        // Notice: NO customers key
+      }
+    };
+
+    await indexedDBAdapter.importAll(v1Backup);
+    const customers = await indexedDBAdapter.getCustomers();
+    const created = customers.find((c) => c.name === 'Senator Kashim');
+    expect(created).toBeDefined();
+    expect(created.phone_norm).toBe('+2348037778888');
+    expect(created.source).toBe('WhatsApp');
+  });
+
+  it('v2 export → reset → import round-trip preserves customers including measurements, notes, and follow_up', async () => {
+    // Add custom customer with full fields
+    const custom = await indexedDBAdapter.addCustomer({
+      name: 'Prince Adeleke',
+      phone: '+2348039991122',
+      source: 'Walk-in',
+      notes: 'VIP customer fitting for royal wedding',
+      measurements: {
+        chest: 42.5,
+        waist: 36,
+        hips: 40,
+        shoulder: 18.75,
+        sleeve: 25.5,
+        updated_at: '2026-11-03T12:00:00Z'
+      },
+      follow_up: {
+        due: '2026-11-05',
+        note: 'Send embroidery color swatches',
+        done_at: null
+      }
+    });
+
+    // Export v2
+    const exportedV2 = await indexedDBAdapter.exportAll();
+    expect(exportedV2.version).toBe(2);
+
+    // Reset to demo
+    await indexedDBAdapter.resetToDemo();
+    let customersAfterReset = await indexedDBAdapter.getCustomers();
+    expect(customersAfterReset.some((c) => c.id === custom.id)).toBe(false);
+
+    // Restore from exported v2
+    await indexedDBAdapter.importAll(exportedV2);
+    const restoredCustomers = await indexedDBAdapter.getCustomers();
+    const restored = restoredCustomers.find((c) => c.id === custom.id);
+
+    expect(restored).toBeDefined();
+    expect(restored.name).toBe('Prince Adeleke');
+    expect(restored.phone_norm).toBe('+2348039991122');
+    expect(restored.notes).toBe('VIP customer fitting for royal wedding');
+    expect(restored.measurements).toEqual(custom.measurements);
+    expect(restored.follow_up).toEqual(custom.follow_up);
+  });
 });

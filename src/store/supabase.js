@@ -124,6 +124,7 @@ export const supabaseAdapter = {
     if (!supabase) throw new Error('Supabase is not configured.');
     const record = {
       id: order.id || `ORD-${Date.now().toString().slice(-6)}`,
+      customer_id: order.customer_id || null,
       booking_id: order.booking_id || null,
       customer_name: order.customer_name,
       customer_phone: order.customer_phone,
@@ -202,6 +203,62 @@ export const supabaseAdapter = {
     if (!supabase) throw new Error('Supabase is not configured.');
     const { error } = await supabase
       .from('expenses')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    return true;
+  },
+
+  async getCustomers() {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .order('name', { ascending: true });
+    if (error) throw error;
+    return data;
+  },
+
+  async addCustomer(customer) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const now = new Date().toISOString();
+    const record = {
+      id: customer.id || `CUS-${Date.now()}`,
+      name: customer.name,
+      phone: customer.phone,
+      phone_norm: customer.phone_norm || '',
+      source: customer.source || 'Site',
+      measurements: customer.measurements || null,
+      notes: customer.notes || '',
+      follow_up: customer.follow_up || null,
+      created_at: customer.created_at || now,
+      updated_at: customer.updated_at || now
+    };
+    const { data, error } = await supabase
+      .from('customers')
+      .insert(record)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async updateCustomer(id, updates) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabase
+      .from('customers')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteCustomer(id) {
+    if (!supabase) throw new Error('Supabase is not configured.');
+    const { error } = await supabase
+      .from('customers')
       .delete()
       .eq('id', id);
     if (error) throw error;

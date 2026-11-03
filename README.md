@@ -58,9 +58,10 @@ Visit:
 ```bash
 npm test
 ```
-Runs 34 automated unit tests covering:
+Runs 62 automated unit tests covering:
 - Natural language rule-based expense parser (18k, 1.5m, ₦18000, N18000, 18,000, categories, dates: today/yesterday/last friday/ISO).
-- IndexedDB offline store adapter CRUD and backup import/export.
+- Simple CRM pure logic: phone normalization (`0803...`, `234...`, `+234...`, international `+`, spaces/dashes, garbage), status derivation (due, active, quiet), follow-up priority scheduling, measurement validation and inch/cm conversion, duplicate detection, idempotent order rebuild.
+- IndexedDB offline store adapter CRUD (including v2 `customers` store), upgrade migration, JSON backup export/import v1→v2 compatibility, and reset-to-demo.
 
 ### Production Build & Prerender
 ```bash
@@ -127,6 +128,11 @@ Navigate to `/admin.html`:
   - `1.5m rent 2026-11-01`
   - `Dispatch delivery 2500`
   The system recognizes amounts, categories, and relative dates without requiring any paid AI API keys. Displays an interactive **Confirm Chip** before saving, and provides an **Undo** action.
+- **Clients (CRM):** Minimalist bespoke client relationship manager guided by extreme simplicity and progressive disclosure:
+  - **Minimal List:** Displays name, phone, and a discrete status dot (gold = due follow-up, off-white = active orders, warm grey = quiet).
+  - **Single Follow-Up Card:** Displays at most one due reminder with quick "Mark Done" action and direct WhatsApp link (`https://wa.me/...`).
+  - **Client Profile:** Expandable sections for linked Orders, bespoke Measurements (Chest, Waist, Hips, Shoulder, Sleeve in inches or cm), and Notes with blur autosave.
+  - **Where Data Lives:** All client records reside strictly in this browser's IndexedDB (`customers` object store) on the owner's device, with optional cloud sync when Supabase is enabled.
 - **Backup & Portability:** Export your entire atelier database as a single portable JSON file, or restore from an existing backup in **Settings**.
 
 ---
@@ -149,4 +155,5 @@ To launch live commercial operations, the owner should supply:
 ## 8. Compliance & Legal Notices
 
 - **Nigeria Data Protection Act (NDPA) 2023:** Full privacy disclosure available on the site detailing data controller identity, lawful basis, customer rights, and retention policies.
+- **NDPR Client Data Notice:** The CRM stores personal data (names, phone numbers, measurements, notes) in this browser's IndexedDB on the owner's device only; backup files contain personal data — store them safely. The owner must approve before entering real customer data.
 - **Zero-Upload Virtual Try-On:** All camera frames and user pictures remain strictly on-device in browser RAM. No images are uploaded to any server.

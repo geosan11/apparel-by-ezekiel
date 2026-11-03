@@ -1,4 +1,6 @@
-import { indexedDBAdapter } from './indexeddb.js';
+import { indexedDBAdapter, onUpgradeBlocked, onVersionChange } from './indexeddb.js';
+
+export { onUpgradeBlocked, onVersionChange };
 
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
@@ -200,6 +202,56 @@ export const store = {
       }
     }
     return indexedDBAdapter.deleteExpense(id);
+  },
+
+  async getCustomers() {
+    try {
+      if (activeMode === 'supabase') {
+        const supabaseAdapter = await getSupabase();
+        return await supabaseAdapter.getCustomers();
+      }
+    } catch (err) {
+      console.warn('Supabase fetch customers failed, falling back to IndexedDB:', err);
+    }
+    return indexedDBAdapter.getCustomers();
+  },
+
+  async addCustomer(customer) {
+    let result = null;
+    if (activeMode === 'supabase') {
+      try {
+        const supabaseAdapter = await getSupabase();
+        result = await supabaseAdapter.addCustomer(customer);
+      } catch (err) {
+        console.warn('Supabase addCustomer failed:', err);
+      }
+    }
+    const local = await indexedDBAdapter.addCustomer(customer);
+    return result || local;
+  },
+
+  async updateCustomer(id, updates) {
+    if (activeMode === 'supabase') {
+      try {
+        const supabaseAdapter = await getSupabase();
+        await supabaseAdapter.updateCustomer(id, updates);
+      } catch (err) {
+        console.warn('Supabase updateCustomer failed:', err);
+      }
+    }
+    return indexedDBAdapter.updateCustomer(id, updates);
+  },
+
+  async deleteCustomer(id) {
+    if (activeMode === 'supabase') {
+      try {
+        const supabaseAdapter = await getSupabase();
+        await supabaseAdapter.deleteCustomer(id);
+      } catch (err) {
+        console.warn('Supabase deleteCustomer failed:', err);
+      }
+    }
+    return indexedDBAdapter.deleteCustomer(id);
   },
 
   async getSubscribers() {

@@ -1,6 +1,14 @@
 import '../styles/main.css';
-import { store, getStoreMode, setStoreMode, isBackendConnected } from '../store/index.js';
+import { store, getStoreMode, setStoreMode, isBackendConnected, onUpgradeBlocked, onVersionChange } from '../store/index.js';
 import { parseExpenseText, CATEGORIES } from './expenseParser.js';
+import {
+  initCrmView,
+  renderClientsView,
+  openCustomerProfile,
+  getMeasurementUnit,
+  setMeasurementUnit
+} from './crmView.js';
+import { escapeHtml, normalizePhone } from './crm.js';
 
 // State
 let isAuthenticated = false;
@@ -9,6 +17,7 @@ let currentTab = 'overview';
 let cachedOrders = [];
 let cachedExpenses = [];
 let cachedBookings = [];
+let cachedCustomers = [];
 let pendingExpenseParsed = null;
 let lastAddedExpenseId = null;
 
@@ -83,14 +92,16 @@ async function showDashboard() {
 }
 
 async function refreshAllData() {
-  [cachedOrders, cachedExpenses, cachedBookings] = await Promise.all([
+  [cachedOrders, cachedExpenses, cachedBookings, cachedCustomers] = await Promise.all([
     store.getOrders(),
     store.getExpenses(),
-    store.getBookings()
+    store.getBookings(),
+    store.getCustomers()
   ]);
 
   renderOverview();
   renderOrders();
+  renderClientsView({ customers: cachedCustomers, orders: cachedOrders, store, showToast });
   renderExpenses();
   renderBookingsLeads();
 }
@@ -314,6 +325,37 @@ function setupEventListeners() {
   // Order Filters
   document.getElementById('orderSourceFilter')?.addEventListener('change', () => renderOrders());
   document.getElementById('orderStatusFilter')?.addEventListener('change', () => renderOrders());
+
+  // Settings: Measurement Unit
+  const unitSelect = document.getElementById('settingMeasureUnit');
+  if (unitSelect) {
+    unitSelect.value = getMeasurementUnit();
+    unitSelect.addEventListener('change', async () => {
+      setMeasurementUnit(unitSelect.value);
+      await refreshAllData();
+      showToast('Measurement unit updated.');
+    });
+  }
+
+  // Store lifecycle notices
+  onUpgradeBlocked(() => {
+    const banner = document.getElementById('storeNoticeBanner');
+    if (banner) {
+      banner.textContent = 'Please close other Apparel tabs to finish updating.';
+      banner.style.display = 'block';
+    }
+  });
+
+  onVersionChange(() => {
+    const banner = document.getElementById('storeNoticeBanner');
+    if (banner) {
+      banner.textContent = 'A newer version is open — please reload.';
+      banner.style.display = 'block';
+    }
+  });
+
+  // CRM View Init
+  initCrmView({ store, onRefresh: refreshAllData, showToast });
 }
 
 function showConfirmChip(parsed) {
@@ -403,38 +445,63 @@ function renderOrders() {
     return;
   }
 
-  container.innerHTML = list.map((o) => `
-    <tr>
-      <td style="font-family: monospace; font-size: 0.82rem; color: var(--color-gold);">${o.id}</td>
-      <td>
-        <div style="font-weight: 600;">${o.customer_name}</div>
-        <div style="font-size: 0.8rem; color: var(--color-text-secondary);">${o.customer_phone}</div>
-      </td>
-      <td>
-        <div>${o.design_title}</div>
-        <div style="font-size: 0.75rem; color: var(--color-text-muted);">Fitting: ${o.fitting_date || 'N/A'}</div>
-      </td>
-      <td>
-        <span class="badge" style="background: rgba(184, 155, 106, 0.1);">${o.source}</span>
-      </td>
-      <td>
-        <div><strong>${formatNaira(o.amount)}</strong></div>
-        <div style="font-size: 0.75rem; color: ${o.deposit_status === 'paid' ? '#4E9A51' : 'var(--color-text-muted)'};">
-          Dep: ${formatNaira(o.deposit_amount)} (${o.deposit_status})
-        </div>
-      </td>
-      <td>
-        <select class="form-select status-select" data-order-id="${o.id}" style="padding: 4px 8px; font-size: 0.8rem;">
-          ${['Pending', 'Confirmed', 'In Progress', 'Ready', 'Delivered', 'Cancelled'].map((s) => `
-            <option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>
-          `).join('')}
-        </select>
-      </td>
-      <td>
-        <button class="btn btn-outline btn-sm delete-order-btn" data-order-id="${o.id}" style="padding: 4px 8px; border-color: transparent; color: #D9534F;">✕</button>
-      </td>
-    </tr>
-  `).join('');
+  container.innerHTML = list.map((o) => {
+    const normPhone = normalizePhone(o.customer_phone);
+    const matchedCustomer = cachedCustomers.find(
+      (c) =>
+        (o.customer_id && c.id === o.customer_id) ||
+        (normPhone && c.phone_norm && c.phone_norm === normPhone)
+    );
+
+    const clientHtml = matchedCustomer
+      ? `
+        <button type="button" class="order-client-profile-link" data-customer-id="${escapeHtml(matchedCustomer.id)}" style="background: none; border: none; padding: 0; text-align: left; cursor: pointer; text-decoration: underline; color: inherit; font-weight: 600; font-size: 0.88rem;">
+          ${escapeHtml(o.customer_name)}
+        </button>
+        <div style="font-size: 0.8rem; color: var(--color-text-secondary);">${escapeHtml(o.customer_phone)}</div>
+      `
+      : `
+        <div style="font-weight: 600;">${escapeHtml(o.customer_name)}</div>
+        <div style="font-size: 0.8rem; color: var(--color-text-secondary);">${escapeHtml(o.customer_phone)}</div>
+      `;
+
+    return `
+      <tr>
+        <td style="font-family: monospace; font-size: 0.82rem; color: var(--color-gold);">${escapeHtml(o.id)}</td>
+        <td>${clientHtml}</td>
+        <td>
+          <div>${escapeHtml(o.design_title)}</div>
+          <div style="font-size: 0.75rem; color: var(--color-text-muted);">Fitting: ${escapeHtml(o.fitting_date || 'N/A')}</div>
+        </td>
+        <td>
+          <span class="badge" style="background: rgba(184, 155, 106, 0.1);">${escapeHtml(o.source)}</span>
+        </td>
+        <td>
+          <div><strong>${formatNaira(o.amount)}</strong></div>
+          <div style="font-size: 0.75rem; color: ${o.deposit_status === 'paid' ? '#4E9A51' : 'var(--color-text-muted)'};">
+            Dep: ${formatNaira(o.deposit_amount)} (${escapeHtml(o.deposit_status)})
+          </div>
+        </td>
+        <td>
+          <select class="form-select status-select" data-order-id="${escapeHtml(o.id)}" style="padding: 4px 8px; font-size: 0.8rem;">
+            ${['Pending', 'Confirmed', 'In Progress', 'Ready', 'Delivered', 'Cancelled'].map((s) => `
+              <option value="${s}" ${o.status === s ? 'selected' : ''}>${s}</option>
+            `).join('')}
+          </select>
+        </td>
+        <td>
+          <button class="btn btn-outline btn-sm delete-order-btn" data-order-id="${escapeHtml(o.id)}" style="padding: 4px 8px; border-color: transparent; color: #D9534F;">✕</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Client profile link click handlers
+  container.querySelectorAll('.order-client-profile-link').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      openCustomerProfile(btn.dataset.customerId, { store, showToast });
+    });
+  });
 
   // Status change handlers
   container.querySelectorAll('.status-select').forEach((sel) => {
