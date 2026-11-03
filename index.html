@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apparel by Ezekiel — Luxury Bespoke Nigerian Menswear</title>
+  <meta name="description" content="Handcrafted Agbada, Senator suits, ceremonial kaftans, and modern bespoke tailoring in Lagos, Nigeria. Book a private atelier fitting." />
+  
+  <!-- Open Graph / WhatsApp Preview Tags -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Apparel by Ezekiel — Luxury Bespoke Nigerian Menswear" />
+  <meta property="og:description" content="Handcrafted Agbada, Senator suits, ceremonial kaftans, and modern bespoke tailoring in Lagos, Nigeria." />
+  <meta property="og:image" content="/images/hero.svg" />
+  <meta property="og:url" content="https://apparelbyezekiel.com/" />
+  
+  <!-- Preload Hero LCP Asset -->
+  <link rel="preload" href="/images/hero.svg" as="image" type="image/svg+xml" />
+
+  <!-- Favicon placeholder -->
+  <link rel="icon" type="image/svg+xml" href="/images/logo.svg" />
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="/" class="brand-link" aria-label="Apparel by Ezekiel Home">
+        <span class="brand-wordmark">APPAREL BY <span>EZEKIEL</span></span>
+      </a>
+
+      <nav class="nav-links" aria-label="Main Navigation">
+        <a href="#gallery" class="nav-link active">Collections</a>
+        <a href="#booking" class="nav-link" onclick="window.location.hash='#booking'; document.getElementById('heroBookBtn').click();">Bespoke Fitting</a>
+        <a href="#" class="nav-link" id="navTryOnBtn" onclick="event.preventDefault(); window.openDesignDetail('imperial-agbada');">Virtual Atelier</a>
+        <a href="/admin.html" class="nav-link" style="opacity: 0.65;">Atelier Portal</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="btn btn-outline btn-sm" id="navWishlistBtn" aria-label="Saved designs">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+          <span>Saved</span>
+          <span class="badge badge-beta" id="navWishlistCount" style="display: none; padding: 2px 6px;">0</span>
+        </button>
+
+        <button class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Open mobile navigation" aria-expanded="false">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Drawer -->
+    <div class="mobile-nav-drawer" id="mobileNavDrawer">
+      <a href="#gallery" class="nav-link">Collections</a>
+      <a href="#booking" class="nav-link" onclick="document.getElementById('heroBookBtn').click();">Bespoke Fitting</a>
+      <a href="/admin.html" class="nav-link">Atelier Portal (Admin)</a>
+      <a href="#" class="nav-link" id="openPrivacyBtn">Privacy Notice (NDPA)</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- "New this week" Drop Strip -->
+    <section class="drop-strip-section" aria-label="New Drops Announcement">
+      <div class="container drop-strip-inner">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="badge badge-beta">New This Week</span>
+          <span class="label-caps" style="color: var(--color-text-primary); font-size: 0.72rem;">Curated Artisanal Drops:</span>
+        </div>
+        <div class="drop-strip-items">
+          <div class="drop-pill" style="cursor: pointer;" onclick="window.openDesignDetail('imperial-agbada')">
+            <span>The Imperial Agbada</span>
+            <span style="color: var(--color-gold);">₦385,000</span>
+          </div>
+          <div class="drop-pill" style="cursor: pointer;" onclick="window.openDesignDetail('royal-velvet-kaftan')">
+            <span>Royal Velvet Kaftan</span>
+            <span style="color: var(--color-gold);">₦260,000</span>
+          </div>
+          <div class="drop-pill" style="cursor: pointer;" onclick="window.openDesignDetail('signature-safari-jacket')">
+            <span>Ezekiel Safari Cut</span>
+            <span style="color: var(--color-gold);">₦230,000</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recently Viewed Hook Strip (dynamically populated) -->
+    <section class="drop-strip-section" id="recentlyViewedSection" style="display: none; background-color: #11100F;" aria-label="Recently Viewed Designs">
+      <div class="container drop-strip-inner">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="label-caps">Recently Viewed:</span>
+        </div>
+        <div class="drop-strip-items" id="recentItemsContainer"></div>
+      </div>
+    </section>
+
+    <!-- Hero Section -->
+    <section class="hero-section" aria-labelledby="heroHeading">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <div class="hero-subtitle">
+            <span class="label-caps">Lagos Atelier • Bespoke & Ceremonial</span>
+          </div>
+          <h1 id="heroHeading" class="hero-title">
+            The Architecture of Nigerian Distinction.
+          </h1>
+          <p class="hero-desc">
+            Sculptural Agbadas, razor-sharp Senator tailoring, and ceremonial eveningwear hand-cut for dignitaries, connoisseurs, and modern visionaries.
+          </p>
+          <div class="hero-ctas">
+            <a href="#gallery" class="btn btn-primary">Explore Collection</a>
+            <button class="btn btn-outline" id="heroBookBtn" onclick="window.bookFromWishlist('imperial-agbada')">Book Private Fitting</button>
+          </div>
+        </div>
+
+        <div class="hero-image-wrap">
+          <img src="/images/hero.svg" alt="Apparel by Ezekiel Ceremonial Collection" class="hero-image" width="1200" height="900" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section id="gallery" class="gallery-section" aria-labelledby="galleryHeading">
+      <div class="container">
+        <div class="section-header reveal-on-scroll">
+          <div>
+            <span class="label-caps">Atelier Archive</span>
+            <h2 id="galleryHeading" style="margin-top: 4px;">Selected Creations</h2>
+          </div>
+          <p style="max-width: 420px; font-size: 0.95rem;">
+            Every garment is individually measured, precision drafted, and stitched with hand-embossed finishes in our Lagos atelier.
+          </p>
+        </div>
+
+        <!-- Filter tabs -->
+        <div class="gallery-filters reveal-on-scroll" role="tablist" aria-label="Design categories">
+          <button class="filter-btn active" data-category="all" role="tab">All Pieces</button>
+          <button class="filter-btn" data-category="Agbada" role="tab">Agbada</button>
+          <button class="filter-btn" data-category="Senator" role="tab">Senator</button>
+          <button class="filter-btn" data-category="Kaftan" role="tab">Kaftan</button>
+          <button class="filter-btn" data-category="Suits & Tuxedos" role="tab">Tuxedos</button>
+          <button class="filter-btn" data-category="Contemporary" role="tab">Contemporary</button>
+        </div>
+
+        <!-- Asymmetric Designs Grid -->
+        <div class="designs-grid" id="designsGrid" aria-live="polite">
+          <!-- Dynamically populated from data/designs.json via app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Drop Notification Capture Section -->
+    <section class="reveal-on-scroll" style="background-color: var(--color-bg-card); border-top: 1px solid var(--color-border-subtle); border-bottom: 1px solid var(--color-border-subtle); padding: var(--space-8) 0;" aria-label="Drop Notifications">
+      <div class="container" style="max-width: 680px; text-align: center;">
+        <span class="label-caps">Private Client Dispatch</span>
+        <h2 style="margin: 8px 0 12px;">Notify Me of New Drops</h2>
+        <p style="margin-bottom: 24px;">
+          Receive private WhatsApp notices or emails 24 hours prior to public textile arrivals and limited seasonal releases.
+        </p>
+        <form id="dropCaptureForm" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+          <input type="text" id="dropContactInput" placeholder="WhatsApp Number (+234...) or Email" required class="form-input" style="max-width: 380px;" aria-label="WhatsApp Number or Email" />
+          <button type="submit" class="btn btn-primary">Join Dispatch</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <span class="brand-wordmark" style="font-size: 1.25rem;">APPAREL BY <span>EZEKIEL</span></span>
+          <p style="margin-top: 12px; font-size: 0.9rem; max-width: 320px;">
+            Bespoke tailoring atelier crafting generational menswear. Victoria Island & Ikoyi, Lagos, Nigeria.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="label-caps" style="margin-bottom: 12px;">Atelier Services</h4>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 0.9rem;">
+            <li><a href="#gallery" class="text-secondary">Artisanal Agbada</a></li>
+            <li><a href="#gallery" class="text-secondary">Bespoke Senator Sets</a></li>
+            <li><a href="#gallery" class="text-secondary">Red Carpet Tuxedos</a></li>
+            <li><a href="#booking" class="text-secondary" onclick="window.bookFromWishlist('imperial-agbada')">Home & Office Fitting</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="label-caps" style="margin-bottom: 12px;">Contact & Access</h4>
+          <p style="font-size: 0.9rem; margin-bottom: 8px;">
+            Direct Concierge: <a href="https://wa.me/2348000000000" class="text-gold" target="_blank" rel="noopener">+234 (0) 800 EZEKIEL</a>
+          </p>
+          <p style="font-size: 0.9rem; margin-bottom: 12px;">
+            Atelier: Plot 12B, Victoria Island, Lagos
+          </p>
+          <a href="/admin.html" class="btn btn-outline btn-sm">Atelier Management Portal</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>
+          © 2026 Apparel by Ezekiel Atelier. All rights reserved.
+        </div>
+        <div style="display: flex; gap: 16px;">
+          <a href="#" id="footerPrivacyLink" onclick="event.preventDefault(); document.getElementById('openPrivacyBtn').click();">Privacy Notice (NDPA 2023)</a>
+          <span style="color: var(--color-gold);">Simulated Experience</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================= -->
+  <!-- MODALS -->
+  <!-- ========================================================================= -->
+
+  <!-- 1. 3D Preview Modal (Beta) -->
+  <div class="modal-backdrop" id="modal3d" role="dialog" aria-modal="true" aria-labelledby="modal3dTitle">
+    <div class="modal-panel modal-panel-lg">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <h3 id="modal3dTitle" style="font-size: 1.25rem;">3D Garment Preview</h3>
+          <span class="badge badge-beta">Beta</span>
+        </div>
+        <button class="modal-close-btn" id="closeModal3d" aria-label="Close 3D Preview">✕</button>
+      </div>
+      <div class="modal-content" style="padding: 0;">
+        <div class="three-canvas-wrap" id="threeCanvasWrap"></div>
+        <div style="padding: 12px 16px; background: var(--color-bg-card); display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--color-text-secondary); border-top: 1px solid var(--color-border-subtle);">
+          <span>Drag to orbit • Damped auto-rotation resumes on idle • High-DPI capped</span>
+          <span class="badge badge-beta">Procedural Garment Mesh</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Virtual Try-On Modal (Beta) -->
+  <div class="modal-backdrop" id="modalTryOn" role="dialog" aria-modal="true" aria-labelledby="tryonTitle">
+    <div class="modal-panel modal-panel-xl">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <h3 id="tryonTitle" style="font-size: 1.25rem;">Virtual Atelier Try-On</h3>
+          <span class="badge badge-beta">Beta</span>
+        </div>
+        <button class="modal-close-btn" aria-label="Close Virtual Try-On">✕</button>
+      </div>
+
+      <div class="modal-content">
+        <!-- Zero-Upload Privacy Guarantee Banner -->
+        <div style="background-color: rgba(184, 155, 106, 0.1); border: 1px solid var(--color-border); padding: 8px 14px; margin-bottom: 16px; border-radius: 2px; font-size: 0.82rem; color: var(--color-text-primary);">
+          <strong>Strict Zero-Upload Privacy:</strong> All canvas scaling and overlay rendering happens 100% inside your local device browser. No photo is ever transmitted to or stored on any server.
+        </div>
+
+        <div class="tryon-workspace">
+          <div class="tryon-canvas-container">
+            <canvas id="tryonCanvas" class="tryon-canvas" width="600" height="800"></canvas>
+          </div>
+
+          <div class="tryon-controls-panel">
+            <div>
+              <label class="form-label">1. Choose Your Photo</label>
+              <div style="display: flex; gap: 8px;">
+                <label class="btn btn-outline btn-sm" style="flex: 1; text-align: center;">
+                  Upload Photo
+                  <input type="file" id="tryonFileInput" accept="image/*" style="display: none;" />
+                </label>
+                <button type="button" class="btn btn-outline btn-sm" id="tryonCameraBtn" style="flex: 1;">
+                  Take Snapshot
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label">2. Select Design Silhouette</label>
+              <div id="tryonGarmentList" style="display: flex; flex-wrap: wrap; gap: 6px; max-height: 140px; overflow-y: auto; padding: 4px 0;"></div>
+            </div>
+
+            <div>
+              <label class="form-label">3. Adjust Fit (or Drag / Pinch Canvas)</label>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--color-text-secondary); margin-bottom: 2px;">
+                    <span>Scale</span>
+                  </div>
+                  <input type="range" id="tryonScaleSlider" min="0.4" max="2.0" step="0.05" value="1.0" style="width: 100%; accent-color: var(--color-gold);" />
+                </div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--color-text-secondary); margin-bottom: 2px;">
+                    <span>Tilt Angle</span>
+                  </div>
+                  <input type="range" id="tryonRotateSlider" min="-30" max="30" step="1" value="0" style="width: 100%; accent-color: var(--color-gold);" />
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--color-border-subtle);">
+              <button class="btn btn-primary" id="tryonDownloadBtn" style="width: 100%;">
+                Download Atelier Look (PNG)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Bespoke Booking Modal -->
+  <div class="modal-backdrop" id="modalBooking" role="dialog" aria-modal="true" aria-labelledby="bookingTitle">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="bookingTitle" style="font-size: 1.25rem;">Book Bespoke Atelier Fitting</h3>
+        <button class="modal-close-btn" aria-label="Close Booking">✕</button>
+      </div>
+
+      <div class="modal-content">
+        <!-- Booking Form Section -->
+        <div id="bookingFormSection">
+          <p style="font-size: 0.88rem; margin-bottom: 16px;">
+            Reserve an exclusive private fitting session in our Victoria Island atelier or at your Lagos residence.
+          </p>
+
+          <form id="bookingForm">
+            <div class="form-group">
+              <label for="bookingName" class="form-label">Full Name *</label>
+              <input type="text" id="bookingName" class="form-input" placeholder="e.g. Chief Adebayo Alabi" required />
+            </div>
+
+            <div class="form-group">
+              <label for="bookingPhone" class="form-label">WhatsApp Phone Number *</label>
+              <input type="tel" id="bookingPhone" class="form-input" placeholder="+234 803 000 0000" required />
+            </div>
+
+            <div class="form-group">
+              <label for="bookingDate" class="form-label">Preferred Fitting Date *</label>
+              <input type="date" id="bookingDate" class="form-input" required />
+            </div>
+
+            <div class="form-group">
+              <label for="bookingDesignSelect" class="form-label">Selected Design</label>
+              <select id="bookingDesignSelect" class="form-select"></select>
+            </div>
+
+            <div class="form-group">
+              <label for="bookingNotes" class="form-label">Fitting Notes / Preferred Location</label>
+              <textarea id="bookingNotes" class="form-textarea" placeholder="Provide any measurement preferences, special occasion date, or venue instructions..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Proceed to Fitting Reservation</button>
+          </form>
+        </div>
+
+        <!-- Booking Success & Simulated Payment Section -->
+        <div id="bookingSuccessSection" style="display: none; text-align: center; padding: 12px 0;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(78, 154, 81, 0.2); border: 1px solid #4E9A51; color: #4E9A51; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 1.5rem;">
+            ✓
+          </div>
+          <h3>Fitting Reservation Initiated</h3>
+          <p style="margin: 8px 0 16px; font-size: 0.9rem;">
+            Appointment Ref: <strong id="bookingSuccessRef" class="text-gold"></strong>
+          </p>
+
+          <div style="background: var(--color-bg-elevated); padding: 16px; border-radius: 2px; margin-bottom: 20px; border: 1px solid var(--color-border-subtle); text-align: left;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span>Fitting Commitment Deposit:</span>
+              <strong>₦50,000</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Deposit Status:</span>
+              <span class="badge" id="depositStatusBadge" style="background: rgba(217, 83, 79, 0.15); color: #D9534F;">PENDING</span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn btn-primary" id="simulateOpayBtn">
+              Pay ₦50,000 Deposit via OPay (Simulated)
+            </button>
+            <a href="#" id="bookingConfirmWaBtn" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="border-color: #25D366; color: #25D366;">
+              Confirm on WhatsApp with Ezekiel
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Simulated OPay Checkout Modal -->
+  <div class="modal-backdrop" id="opayModal" role="dialog" aria-modal="true" aria-labelledby="opayModalTitle">
+    <div class="modal-panel" style="max-width: 440px; padding: 0; overflow: hidden;">
+      <!-- Persistent DEMO Notice -->
+      <div class="demo-payment-banner">
+        DEMO — NO REAL PAYMENT IS TAKEN
+      </div>
+
+      <div style="padding: 24px; background-color: #0E0E0E;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: 800; font-size: 1.2rem; color: #00B875; letter-spacing: -0.02em;">OPay</span>
+            <span style="font-size: 0.8rem; color: var(--color-text-secondary);">Checkout Simulation</span>
+          </div>
+          <button class="modal-close-btn" onclick="document.getElementById('opayModal').classList.remove('open');">✕</button>
+        </div>
+
+        <div style="text-align: center; padding: 16px 0; border-top: 1px solid var(--color-border-subtle); border-bottom: 1px solid var(--color-border-subtle); margin-bottom: 20px;">
+          <div style="font-size: 0.8rem; color: var(--color-text-secondary); text-transform: uppercase;">Amount to Pay</div>
+          <div style="font-size: 2rem; font-weight: 700; color: #F6F3EE; font-family: var(--font-body); margin: 4px 0;">₦50,000.00</div>
+          <div style="font-size: 0.75rem; color: var(--color-gold);">Merchant: Apparel by Ezekiel Atelier Lagos</div>
+        </div>
+
+        <div style="font-size: 0.82rem; color: var(--color-text-secondary); line-height: 1.5; margin-bottom: 20px;">
+          This simulates the instant Nigerian instant payment flow (Bank Transfer / USSD / Card) for booking deposits. Clicking below marks the deposit as paid in the database without debiting any account.
+        </div>
+
+        <button class="btn btn-primary" id="completeOpaySimBtn" style="width: 100%; background-color: #00B875; border-color: #00B875; color: #FFFFFF;">
+          Complete Simulated Deposit (₦50,000)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Piece Detail Modal -->
+  <div class="modal-backdrop" id="modalDetail" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
+    <div class="modal-panel modal-panel-lg">
+      <div class="modal-header">
+        <h3 id="detailModalTitle" style="font-size: 1.25rem;">Atelier Garment</h3>
+        <button class="modal-close-btn" aria-label="Close Detail">✕</button>
+      </div>
+      <div class="modal-content" id="detailModalContent"></div>
+    </div>
+  </div>
+
+  <!-- 6. Saved Wishlist Drawer Modal -->
+  <div class="modal-backdrop" id="modalWishlist" role="dialog" aria-modal="true" aria-labelledby="wishlistModalTitle">
+    <div class="modal-panel" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3 id="wishlistModalTitle" style="font-size: 1.25rem;">Your Saved Collection</h3>
+        <button class="modal-close-btn" id="closeWishlistModal" aria-label="Close Wishlist">✕</button>
+      </div>
+      <div class="modal-content" id="wishlistItemsContainer"></div>
+    </div>
+  </div>
+
+  <!-- 7. Nigeria NDPA 2023 Privacy Notice Modal -->
+  <div class="modal-backdrop" id="privacyModal" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3 id="privacyTitle" style="font-size: 1.25rem;">Privacy Notice (Nigeria NDPA 2023)</h3>
+        <button class="modal-close-btn" aria-label="Close Privacy Notice">✕</button>
+      </div>
+      <div class="modal-content" style="font-size: 0.9rem; line-height: 1.7;">
+        <p><strong>Data Controller:</strong> Apparel by Ezekiel Atelier (Victoria Island, Lagos, Nigeria).</p>
+        <p style="margin-top: 10px;">
+          In accordance with the <strong>Nigeria Data Protection Act (NDPA) 2023</strong>, we are committed to transparent, lawful handling of your personal data.
+        </p>
+        <h4 style="margin: 14px 0 6px; font-size: 1rem;" class="text-gold">1. What We Collect</h4>
+        <ul style="padding-left: 20px; color: var(--color-text-secondary);">
+          <li>Contact details: Customer Name, WhatsApp phone number, and optional email.</li>
+          <li>Bespoke information: Body measurements, fitting appointment dates, and styling preferences.</li>
+        </ul>
+        <h4 style="margin: 14px 0 6px; font-size: 1rem;" class="text-gold">2. Why We Collect It</h4>
+        <ul style="padding-left: 20px; color: var(--color-text-secondary);">
+          <li>To schedule, coordinate, and confirm bespoke garment fittings.</li>
+          <li>To notify subscribed clients of limited textile arrivals and seasonal drops.</li>
+        </ul>
+        <h4 style="margin: 14px 0 6px; font-size: 1rem;" class="text-gold">3. Zero-Upload Virtual Try-On</h4>
+        <p style="color: var(--color-text-secondary);">
+          Our Virtual Try-On technology executes entirely in your client browser memory using HTML5 Canvas. Your photos are never uploaded to our servers, third parties, or cloud storage.
+        </p>
+        <h4 style="margin: 14px 0 6px; font-size: 1rem;" class="text-gold">4. Your Rights</h4>
+        <p style="color: var(--color-text-secondary);">
+          Under the NDPA 2023, you retain the right to inspect, rectify, or request immediate deletion of your contact records by contacting Ezekiel Concierge via WhatsApp or atelier email.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/public/app.js"></script>
+</body>
+</html>
