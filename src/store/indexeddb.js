@@ -421,31 +421,35 @@ function openDB() {
               const snapshotData = {};
               let pending = v1Stores.length;
 
+              const finish = () => {
+                pending--;
+                if (pending === 0) {
+                  try {
+                    localStorage.setItem(
+                      'apparel_pre_v2_backup',
+                      JSON.stringify({
+                        version: 1,
+                        appName: 'Apparel by Ezekiel',
+                        exportedAt: new Date().toISOString(),
+                        data: snapshotData
+                      })
+                    );
+                  } catch (err) {}
+                }
+              };
+
               for (const sName of v1Stores) {
                 if (db.objectStoreNames.contains(sName)) {
                   const req = tx.objectStore(sName).getAll();
                   req.onsuccess = () => {
                     snapshotData[sName] = req.result || [];
-                    pending--;
-                    if (pending === 0) {
-                      try {
-                        localStorage.setItem(
-                          'apparel_pre_v2_backup',
-                          JSON.stringify({
-                            version: 1,
-                            appName: 'Apparel by Ezekiel',
-                            exportedAt: new Date().toISOString(),
-                            data: snapshotData
-                          })
-                        );
-                      } catch (err) {}
-                    }
+                    finish();
                   };
                   req.onerror = () => {
-                    pending--;
+                    finish();
                   };
                 } else {
-                  pending--;
+                  finish();
                 }
               }
             } catch (e) {

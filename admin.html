@@ -14,8 +14,15 @@
       border-bottom: 1px solid var(--color-border-subtle);
       margin-bottom: 24px;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+    }
+    .admin-nav-bar::-webkit-scrollbar {
+      display: none;
     }
     .admin-nav-tab {
+      flex-shrink: 0;
       background: none;
       border: none;
       border-bottom: 2px solid transparent;
@@ -171,6 +178,23 @@
     </header>
 
     <main class="container" style="padding-top: 24px; padding-bottom: 64px;">
+      <!-- Pre-update Backup Banner -->
+      <div id="preV2BackupBanner" style="display: none; background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-left: 3px solid var(--color-gold); padding: 14px 20px; border-radius: 2px; margin-bottom: 24px; font-family: var(--font-body);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+          <div style="font-size: 0.88rem; color: var(--color-text-primary); line-height: 1.5;">
+            Your data was updated for Clients. A backup of your previous data is ready.
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; flex-shrink: 0;">
+            <button type="button" id="downloadPreV2BackupBannerBtn" class="btn btn-primary btn-sm">
+              Download backup
+            </button>
+            <button type="button" id="dismissPreV2BackupBannerBtn" style="background: none; border: none; color: var(--color-text-secondary); cursor: pointer; font-size: 0.82rem; padding: 6px 10px; text-decoration: underline; font-family: inherit;">
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab Navigation -->
       <nav class="admin-nav-bar" role="tablist">
         <button class="admin-nav-tab active" data-tab="overview">Overview</button>

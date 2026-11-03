@@ -570,7 +570,7 @@ export function closeModal(modalId) {
   if (modal) modal.classList.remove('open');
 }
 
-function initBackupSettings() {
+export function initBackupSettings() {
   const backupKey = 'apparel_pre_v2_backup';
   const container = document.getElementById('preV2BackupNotice');
   if (!container) return;
@@ -590,6 +590,8 @@ function initBackupSettings() {
           a.click();
           localStorage.removeItem(backupKey);
           container.style.display = 'none';
+          const banner = document.getElementById('preV2BackupBanner');
+          if (banner) banner.style.display = 'none';
         } catch (e) {
           console.warn('Backup download failed:', e);
         }

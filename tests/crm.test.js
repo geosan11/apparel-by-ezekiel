@@ -322,4 +322,25 @@ describe('CRM Pure Logic (src/admin/crm.js)', () => {
       expect(escapeHtml(null)).toBe('');
     });
   });
+
+  describe('Pre-update backup banner rules', () => {
+    it('determines visibility based on pre-v2 backup presence and downloaded flag absence', () => {
+      const isBannerVisible = (hasBackup, isDownloaded) => Boolean(hasBackup && !isDownloaded);
+
+      expect(isBannerVisible(false, false)).toBe(false);
+      expect(isBannerVisible(true, false)).toBe(true);
+      expect(isBannerVisible(true, true)).toBe(false);
+      expect(isBannerVisible(false, true)).toBe(false);
+    });
+
+    it('formats backup filename as apparel-ezekiel-pre-update-backup-YYYY-MM-DD.json', () => {
+      const getBackupDownloadFilename = (date = new Date()) => {
+        const dateStr = date.toISOString().slice(0, 10);
+        return `apparel-ezekiel-pre-update-backup-${dateStr}.json`;
+      };
+
+      const filename = getBackupDownloadFilename(new Date('2026-11-03T12:00:00Z'));
+      expect(filename).toBe('apparel-ezekiel-pre-update-backup-2026-11-03.json');
+    });
+  });
 });

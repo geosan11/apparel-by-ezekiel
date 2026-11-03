@@ -6,7 +6,8 @@ import {
   renderClientsView,
   openCustomerProfile,
   getMeasurementUnit,
-  setMeasurementUnit
+  setMeasurementUnit,
+  initBackupSettings
 } from './crmView.js';
 import { escapeHtml, normalizePhone } from './crm.js';
 
@@ -87,6 +88,8 @@ async function showDashboard() {
     badge.textContent = isDemoSession ? 'Demo Session (Local)' : 'Supabase Live Auth';
     badge.className = isDemoSession ? 'badge badge-beta' : 'badge badge-new';
   }
+
+  checkPreV2BackupBanner();
 
   await refreshAllData();
 }
@@ -170,6 +173,10 @@ function setupEventListeners() {
       document.querySelectorAll('.admin-tab-screen').forEach((screen) => {
         screen.style.display = screen.id === `tab-${currentTab}` ? 'block' : 'none';
       });
+
+      if (currentTab === 'settings') {
+        initBackupSettings();
+      }
     });
   });
 
@@ -354,8 +361,61 @@ function setupEventListeners() {
     }
   });
 
+  // Pre-v2 Backup Banner Listeners
+  const downloadBackupBannerBtn = document.getElementById('downloadPreV2BackupBannerBtn');
+  if (downloadBackupBannerBtn) {
+    downloadBackupBannerBtn.addEventListener('click', () => {
+      try {
+        const raw = localStorage.getItem('apparel_pre_v2_backup');
+        if (raw) {
+          const blob = new Blob([raw], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const dateStr = new Date().toISOString().slice(0, 10);
+          a.download = `apparel-ezekiel-pre-update-backup-${dateStr}.json`;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+      } catch (e) {
+        console.warn('Backup download failed:', e);
+      }
+      try {
+        localStorage.setItem('apparel_pre_v2_backup_downloaded', 'true');
+      } catch (e) {}
+      const banner = document.getElementById('preV2BackupBanner');
+      if (banner) banner.style.display = 'none';
+    });
+  }
+
+  const dismissBackupBannerBtn = document.getElementById('dismissPreV2BackupBannerBtn');
+  if (dismissBackupBannerBtn) {
+    dismissBackupBannerBtn.addEventListener('click', () => {
+      try {
+        localStorage.setItem('apparel_pre_v2_backup_downloaded', 'true');
+      } catch (e) {}
+      const banner = document.getElementById('preV2BackupBanner');
+      if (banner) banner.style.display = 'none';
+    });
+  }
+
   // CRM View Init
   initCrmView({ store, onRefresh: refreshAllData, showToast });
+}
+
+export function checkPreV2BackupBanner() {
+  const banner = document.getElementById('preV2BackupBanner');
+  if (!banner) return;
+
+  if (
+    typeof localStorage !== 'undefined' &&
+    localStorage.getItem('apparel_pre_v2_backup') &&
+    !localStorage.getItem('apparel_pre_v2_backup_downloaded')
+  ) {
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 function showConfirmChip(parsed) {

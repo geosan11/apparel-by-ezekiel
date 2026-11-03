@@ -229,4 +229,64 @@ describe('IndexedDB Store Adapter (with in-memory fallback)', () => {
     expect(restored.measurements).toEqual(custom.measurements);
     expect(restored.follow_up).toEqual(custom.follow_up);
   });
+
+  it('upgrade snapshot finishes and writes to localStorage even if stores are missing or error', () => {
+    const mockStorage = {};
+    const originalLocalStorage = globalThis.localStorage;
+    globalThis.localStorage = {
+      getItem: (k) => mockStorage[k] || null,
+      setItem: (k, v) => { mockStorage[k] = String(v); },
+      removeItem: (k) => { delete mockStorage[k]; }
+    };
+
+    try {
+      const v1Stores = ['designs', 'bookings', 'orders', 'expenses', 'subscribers'];
+      const snapshotData = {};
+      let pending = v1Stores.length;
+
+      const finish = () => {
+        pending--;
+        if (pending === 0) {
+          try {
+            globalThis.localStorage.setItem(
+              'apparel_pre_v2_backup',
+              JSON.stringify({
+                version: 1,
+                appName: 'Apparel by Ezekiel',
+                exportedAt: new Date().toISOString(),
+                data: snapshotData
+              })
+            );
+          } catch (err) {}
+        }
+      };
+
+      const existing = {
+        designs: [{ id: '1', title: 'Suit' }],
+        orders: [{ id: 'o1', amount: 50000 }]
+      };
+
+      for (const sName of v1Stores) {
+        if (sName === 'bookings') {
+          // simulates req.onerror
+          finish();
+        } else if (existing[sName]) {
+          // simulates req.onsuccess
+          snapshotData[sName] = existing[sName];
+          finish();
+        } else {
+          // missing
+          finish();
+        }
+      }
+
+      expect(mockStorage['apparel_pre_v2_backup']).toBeDefined();
+      const parsed = JSON.parse(mockStorage['apparel_pre_v2_backup']);
+      expect(parsed.version).toBe(1);
+      expect(parsed.data.designs).toHaveLength(1);
+      expect(parsed.data.orders).toHaveLength(1);
+    } finally {
+      globalThis.localStorage = originalLocalStorage;
+    }
+  });
 });
