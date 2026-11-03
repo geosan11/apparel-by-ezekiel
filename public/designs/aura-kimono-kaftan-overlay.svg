@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 750" width="600" height="750">
+  <g transform="translate(300, 360)">
+    
+    <!-- Kaftan/Kimono Silhouette -->
+    <path d="M-135,260 L-125,-70 L-65,-115 C-35,-125 35,-125 65,-115 L125,-70 L135,260 Z"
+      fill="#1E2024" stroke="#8A847C" stroke-opacity="0.85" stroke-width="2"/>
+    
+    <!-- Neck / Collar -->
+    <path d="M-34,-118 C-20,-80 20,-80 34,-118 Z" 
+      fill="none" stroke="#8A847C" stroke-width="2"/>
+    
+    <!-- Minimalist Long Placket -->
+    <line x1="0" y1="-80" x2="0" y2="160" stroke="#8A847C" stroke-width="2"/>
+    <circle cx="0" cy="-40" r="2.5" fill="#8A847C"/>
+    <circle cx="0" cy="0" r="2.5" fill="#8A847C"/>
+    <circle cx="0" cy="40" r="2.5" fill="#8A847C"/>
+    <circle cx="0" cy="80" r="2.5" fill="#8A847C"/>
+    
+    <!-- Hem Trim -->
+    <line x1="-120" y1="240" x2="120" y2="240" stroke="#8A847C" stroke-width="1" stroke-opacity="0.5"/>
+  
+  </g>
+</svg>

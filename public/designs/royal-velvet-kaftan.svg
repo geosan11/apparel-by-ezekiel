@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <defs>
+    <linearGradient id="bg-royal-velvet-kaftan" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0A0E14"/>
+      <stop offset="100%" stop-color="#05070B"/>
+    </linearGradient>
+    <radialGradient id="glow-royal-velvet-kaftan" cx="0.5" cy="0.45" r="0.5">
+      <stop offset="0%" stop-color="#B89B6A" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#05070B" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg-royal-velvet-kaftan)"/>
+  <rect width="800" height="1000" fill="url(#glow-royal-velvet-kaftan)"/>
+  
+  <!-- Subtle Framing -->
+  <rect x="24" y="24" width="752" height="952" fill="none" stroke="#B89B6A" stroke-opacity="0.12" stroke-width="1"/>
+  
+  <!-- Garment Illustration -->
+  <g transform="translate(400, 520)">
+    
+    <!-- Kaftan/Kimono Silhouette -->
+    <path d="M-135,260 L-125,-70 L-65,-115 C-35,-125 35,-125 65,-115 L125,-70 L135,260 Z"
+      fill="#0E131C" stroke="#B89B6A" stroke-opacity="0.45" stroke-width="2"/>
+    
+    <!-- Neck / Collar -->
+    <path d="M-34,-118 C-20,-80 20,-80 34,-118 Z" 
+      fill="#0E0E0E" stroke="#B89B6A" stroke-width="2"/>
+    
+    <!-- Minimalist Long Placket -->
+    <line x1="0" y1="-80" x2="0" y2="160" stroke="#B89B6A" stroke-width="2"/>
+    <circle cx="0" cy="-40" r="2.5" fill="#B89B6A"/>
+    <circle cx="0" cy="0" r="2.5" fill="#B89B6A"/>
+    <circle cx="0" cy="40" r="2.5" fill="#B89B6A"/>
+    <circle cx="0" cy="80" r="2.5" fill="#B89B6A"/>
+    
+    <!-- Hem Trim -->
+    <line x1="-120" y1="240" x2="120" y2="240" stroke="#B89B6A" stroke-width="1" stroke-opacity="0.5"/>
+  
+  </g>
+  
+  <!-- Brand and Title Header in SVG -->
+  <text x="400" y="80" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="28" font-weight="600" letter-spacing="0.18em" fill="#F6F3EE">ROYAL VELVET KAFTAN</text>
+  <text x="400" y="108" text-anchor="middle" font-family="'Inter', sans-serif" font-size="11" font-weight="500" letter-spacing="0.25em" fill="#B89B6A">EZEKIEL BESPOKE ATELIER</text>
+  
+  <!-- Placeholder indicator -->
+  <rect x="300" y="920" width="200" height="26" rx="13" fill="#000000" fill-opacity="0.5" stroke="#B89B6A" stroke-opacity="0.25"/>
+  <text x="400" y="937" text-anchor="middle" font-family="'Inter', sans-serif" font-size="9" font-weight="500" letter-spacing="0.15em" fill="#8A847C">PREVIEW PLACEHOLDER</text>
+</svg>

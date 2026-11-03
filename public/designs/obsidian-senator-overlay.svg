@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 750" width="600" height="750">
+  <g transform="translate(300, 360)">
+    
+      <!-- Senator Tunic & Shoulders -->
+      <path d="M-140,260 L-130,-70 L-70,-115 C-40,-125 40,-125 70,-115 L130,-70 L140,260 Z"
+        fill="#121213" stroke="#8A847C" stroke-opacity="0.85" stroke-width="2"/>
+      
+      <!-- Neck Cutout Curve -->
+      <path d="M-36,-118 C-25,-85 25,-85 36,-118 C20,-130 -20,-130 -36,-118 Z" 
+        fill="none" stroke="#8A847C" stroke-width="2"/>
+
+      <!-- Asymmetric Senator Placket -->
+      <path d="M15,-85 L15,220" stroke="#8A847C" stroke-width="2.5"/>
+      <rect x="10" y="-30" width="10" height="24" rx="2" fill="#8A847C"/>
+      <rect x="10" y="30" width="10" height="24" rx="2" fill="#8A847C"/>
+      <rect x="10" y="90" width="10" height="24" rx="2" fill="#8A847C"/>
+      
+      <!-- Pocket welt -->
+      <line x1="-70" y1="10" x2="-25" y2="10" stroke="#8A847C" stroke-width="2"/>
+      <!-- Side slits -->
+      <line x1="-125" y1="180" x2="-125" y2="260" stroke="#8A847C" stroke-width="1.5" stroke-dasharray="2,2"/>
+      <line x1="125" y1="180" x2="125" y2="260" stroke="#8A847C" stroke-width="1.5" stroke-dasharray="2,2"/>
+    
+  </g>
+</svg>

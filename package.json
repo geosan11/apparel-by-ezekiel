@@ -1,0 +1,36 @@
+{
+  "name": "apparel-by-ezekiel",
+  "version": "1.0.0",
+  "description": "Apparel by Ezekiel — Luxury Nigerian Bespoke Menswear & Modern Tailoring",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node scripts/prerender.js",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/geosan11/apparel-by-ezekiel.git"
+  },
+  "keywords": [
+    "bespoke-fashion",
+    "menswear",
+    "nigerian-fashion",
+    "luxury-tailoring",
+    "pwa",
+    "vite"
+  ],
+  "author": "Ezekiel",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@supabase/supabase-js": "^2.118.0",
+    "three": "^0.187.0"
+  }
+}

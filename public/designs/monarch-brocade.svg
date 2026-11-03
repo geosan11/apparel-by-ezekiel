@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <defs>
+    <linearGradient id="bg-monarch-brocade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#091611"/>
+      <stop offset="100%" stop-color="#040B08"/>
+    </linearGradient>
+    <radialGradient id="glow-monarch-brocade" cx="0.5" cy="0.45" r="0.5">
+      <stop offset="0%" stop-color="#B89B6A" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#040B08" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg-monarch-brocade)"/>
+  <rect width="800" height="1000" fill="url(#glow-monarch-brocade)"/>
+  
+  <!-- Subtle Framing -->
+  <rect x="24" y="24" width="752" height="952" fill="none" stroke="#B89B6A" stroke-opacity="0.12" stroke-width="1"/>
+  
+  <!-- Garment Illustration -->
+  <g transform="translate(400, 520)">
+    
+      <!-- Agbada Wings -->
+      <path d="M-240,240 L-220,-30 L-80,-120 C-40,-135 40,-135 80,-120 L220,-30 L240,240 C160,210 60,195 0,195 C-60,195 -160,210 -240,240 Z" 
+        fill="#0E231B" stroke="#B89B6A" stroke-opacity="0.45" stroke-width="2"/>
+      
+      <!-- Central Tunic Body -->
+      <path d="M-90,-110 L-90,260 L90,260 L90,-110 C60,-130 -60,-130 -90,-110 Z"
+        fill="#0E231B" stroke="#B89B6A" stroke-opacity="0.45" stroke-width="1.5"/>
+        
+      <!-- Neck Cutout Curve -->
+      <path d="M-40,-125 C-30,-70 30,-70 40,-125 C25,-140 -25,-140 -40,-125 Z" 
+        fill="#0E0E0E" stroke="#B89B6A" stroke-width="2"/>
+      
+      <!-- Chest Embroidery -->
+      <path d="M-55,-65 L0,-10 L55,-65 L0,-120 Z" stroke="#B89B6A" stroke-width="2.5" fill="none"/>
+      <path d="M-35,-65 L0,-30 L35,-65 L0,-100 Z" stroke="#B89B6A" stroke-width="1.2" stroke-dasharray="3,3" fill="none"/>
+      
+      <!-- Placket down -->
+      <line x1="0" y1="-10" x2="0" y2="220" stroke="#B89B6A" stroke-width="2"/>
+      <circle cx="0" cy="20" r="3" fill="#B89B6A"/>
+      <circle cx="0" cy="60" r="3" fill="#B89B6A"/>
+      <circle cx="0" cy="100" r="3" fill="#B89B6A"/>
+      <circle cx="0" cy="140" r="3" fill="#B89B6A"/>
+    
+  </g>
+  
+  <!-- Brand and Title Header in SVG -->
+  <text x="400" y="80" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="28" font-weight="600" letter-spacing="0.18em" fill="#F6F3EE">MONARCH BROCADE SET</text>
+  <text x="400" y="108" text-anchor="middle" font-family="'Inter', sans-serif" font-size="11" font-weight="500" letter-spacing="0.25em" fill="#B89B6A">EZEKIEL BESPOKE ATELIER</text>
+  
+  <!-- Placeholder indicator -->
+  <rect x="300" y="920" width="200" height="26" rx="13" fill="#000000" fill-opacity="0.5" stroke="#B89B6A" stroke-opacity="0.25"/>
+  <text x="400" y="937" text-anchor="middle" font-family="'Inter', sans-serif" font-size="9" font-weight="500" letter-spacing="0.15em" fill="#8A847C">PREVIEW PLACEHOLDER</text>
+</svg>

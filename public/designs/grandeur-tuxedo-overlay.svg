@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 750" width="600" height="750">
+  <g transform="translate(300, 360)">
+    
+      <!-- Double-breasted Tuxedo Jacket -->
+      <path d="M-150,260 L-145,-65 L-75,-115 C-45,-125 45,-125 75,-115 L145,-65 L150,260 Z"
+        fill="#EBE5DC" stroke="#0E0E0E" stroke-opacity="0.3" stroke-width="2"/>
+        
+      <!-- Satin Shawl Lapels -->
+      <path d="M-75,-115 C-60,-30 -30,60 -10,95 L10,95 C30,60 60,-30 75,-115 C55,-128 -55,-128 -75,-115 Z"
+        fill="#141414" stroke="#000" stroke-width="1.5"/>
+
+      <!-- Inner Shirt & Bowtie -->
+      <polygon points="0,-105 -25,-65 25,-65" fill="#F8F6F0"/>
+      <!-- Bowtie -->
+      <path d="M-14,-98 L14,-90 L-14,-90 L14,-98 Z" fill="#141414"/>
+
+      <!-- Double breasted buttons -->
+      <circle cx="-25" cy="80" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+      <circle cx="25" cy="80" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+      <circle cx="-25" cy="130" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+      <circle cx="25" cy="130" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+      <circle cx="-25" cy="180" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+      <circle cx="25" cy="180" r="5" fill="#141414" stroke="#8A847C" stroke-width="1"/>
+    
+  </g>
+</svg>
