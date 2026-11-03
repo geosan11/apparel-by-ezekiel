@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   build: {
+    manifest: true,
     target: 'es2022',
     outDir: 'dist',
     sourcemap: false,

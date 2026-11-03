@@ -1,5 +1,9 @@
 import { indexedDBAdapter } from './indexeddb.js';
-import { supabaseAdapter, isSupabaseConfigured } from './supabase.js';
+
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
 let activeMode = isSupabaseConfigured ? 'supabase' : 'indexeddb';
 
@@ -27,13 +31,14 @@ export function isBackendConnected() {
   return isSupabaseConfigured;
 }
 
-const adapter = {
-  get current() {
-    return activeMode === 'supabase' && isSupabaseConfigured
-      ? supabaseAdapter
-      : indexedDBAdapter;
+let memoisedSupabase = null;
+
+async function getSupabase() {
+  if (!memoisedSupabase) {
+    memoisedSupabase = (await import('./supabase.js')).supabaseAdapter;
   }
-};
+  return memoisedSupabase;
+}
 
 export const store = {
   isSupabaseConfigured,
@@ -47,6 +52,7 @@ export const store = {
   async getDesigns() {
     try {
       if (activeMode === 'supabase') {
+        const supabaseAdapter = await getSupabase();
         const designs = await supabaseAdapter.getDesigns();
         // sync to indexeddb cache
         for (const d of designs) indexedDBAdapter.saveDesign(d).catch(() => {});
@@ -61,6 +67,7 @@ export const store = {
   async saveDesign(design) {
     if (activeMode === 'supabase') {
       try {
+        const supabaseAdapter = await getSupabase();
         await supabaseAdapter.saveDesign(design);
       } catch (err) {
         console.warn('Supabase save design error, saving to IndexedDB:', err);
@@ -72,6 +79,7 @@ export const store = {
   async getBookings() {
     try {
       if (activeMode === 'supabase') {
+        const supabaseAdapter = await getSupabase();
         return await supabaseAdapter.getBookings();
       }
     } catch (err) {
@@ -84,6 +92,7 @@ export const store = {
     let result = null;
     if (isSupabaseConfigured) {
       try {
+        const supabaseAdapter = await getSupabase();
         result = await supabaseAdapter.addBooking(booking);
       } catch (err) {
         console.warn('Supabase addBooking failed, recording to IndexedDB:', err);
@@ -96,6 +105,7 @@ export const store = {
   async updateBooking(id, updates) {
     if (activeMode === 'supabase') {
       try {
+        const supabaseAdapter = await getSupabase();
         await supabaseAdapter.updateBooking(id, updates);
       } catch (err) {
         console.warn('Supabase updateBooking error:', err);
@@ -107,6 +117,7 @@ export const store = {
   async getOrders() {
     try {
       if (activeMode === 'supabase') {
+        const supabaseAdapter = await getSupabase();
         return await supabaseAdapter.getOrders();
       }
     } catch (err) {
@@ -119,6 +130,7 @@ export const store = {
     let result = null;
     if (activeMode === 'supabase') {
       try {
+        const supabaseAdapter = await getSupabase();
         result = await supabaseAdapter.addOrder(order);
       } catch (err) {
         console.warn('Supabase addOrder failed:', err);
@@ -131,6 +143,7 @@ export const store = {
   async updateOrder(id, updates) {
     if (activeMode === 'supabase') {
       try {
+        const supabaseAdapter = await getSupabase();
         await supabaseAdapter.updateOrder(id, updates);
       } catch (err) {
         console.warn('Supabase updateOrder failed:', err);
@@ -142,6 +155,7 @@ export const store = {
   async deleteOrder(id) {
     if (activeMode === 'supabase') {
       try {
+        const supabaseAdapter = await getSupabase();
         await supabaseAdapter.deleteOrder(id);
       } catch (err) {
         console.warn('Supabase deleteOrder failed:', err);
@@ -153,6 +167,7 @@ export const store = {
   async getExpenses() {
     try {
       if (activeMode === 'supabase') {
+        const supabaseAdapter = await getSupabase();
         return await supabaseAdapter.getExpenses();
       }
     } catch (err) {
@@ -165,6 +180,7 @@ export const store = {
     let result = null;
     if (activeMode === 'supabase') {
       try {
+        const supabaseAdapter = await getSupabase();
         result = await supabaseAdapter.addExpense(expense);
       } catch (err) {
         console.warn('Supabase addExpense failed:', err);
@@ -177,6 +193,7 @@ export const store = {
   async deleteExpense(id) {
     if (activeMode === 'supabase') {
       try {
+        const supabaseAdapter = await getSupabase();
         await supabaseAdapter.deleteExpense(id);
       } catch (err) {
         console.warn('Supabase deleteExpense failed:', err);
@@ -188,6 +205,7 @@ export const store = {
   async getSubscribers() {
     try {
       if (activeMode === 'supabase') {
+        const supabaseAdapter = await getSupabase();
         return await supabaseAdapter.getSubscribers();
       }
     } catch (err) {
@@ -200,6 +218,7 @@ export const store = {
     let result = null;
     if (isSupabaseConfigured) {
       try {
+        const supabaseAdapter = await getSupabase();
         result = await supabaseAdapter.addSubscriber(contact, channel);
       } catch (err) {
         console.warn('Supabase addSubscriber failed:', err);

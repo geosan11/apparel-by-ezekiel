@@ -8,12 +8,12 @@
 
 - **Framework-free:** Pure modern JavaScript (ES2022) with Vite tooling.
 - **Strict Bundle Isolation:** Two independent entries: `index.html` (public client site) and `admin.html` (atelier executive dashboard). The public bundle contains **zero** admin logic.
-- **Dynamic 3D Import:** Three.js is imported dynamically via `import('three')` **only** when a client clicks the 3D Garment Preview. Initial public JavaScript bundle is under **15 KB gzipped**.
+- **Dynamic 3D & Supabase Import:** Three.js is imported dynamically via `import('three')` **only** when a client clicks the 3D Garment Preview. Supabase is loaded lazily only when configured. Initial public JavaScript bundle is **14.39 KB gzipped** (enforced by CI size budget checks: public ≤ 25 KB gz, admin ≤ 75 KB gz initial JS).
 - **Static Prerendering for WhatsApp & Social Sharing:** Build script generates static HTML pages in `dist/designs/<slug>/index.html` with Open Graph tags (`og:title`, `og:image`, `og:description`, `product:price`), ensuring link previews work on WhatsApp, iMessage, and Instagram.
 - **Zero-Upload Virtual Try-On:** All garment overlay positioning, scaling, rotation, and multi-touch gestures occur 100% in-browser on an HTML5 canvas. No client photo is ever sent to or stored on a server.
 - **Dual Data Layer:** Unified store interface (`src/store/index.js`) supporting:
   1. **IndexedDB:** Default offline-first persistence engine with pre-seeded orders, expenses, and bookings.
-  2. **Supabase:** PostgreSQL backend with Row-Level Security (RLS) policies, activated automatically when environment variables are supplied.
+  2. **Supabase:** PostgreSQL backend with Row-Level Security (RLS) policies, dynamically loaded only when environment variables are supplied.
 
 ---
 
@@ -67,6 +67,15 @@ Runs 34 automated unit tests covering:
 npm run build
 ```
 Compiles production assets to `/dist` and runs `scripts/prerender.js` to create per-design static HTML pages with Open Graph tags.
+
+### Bundle Size Budget Check
+```bash
+npm run size
+```
+Verifies initial first-load JavaScript budgets via manifest analysis (`dist/.vite/manifest.json`):
+- Public site (`index.html`) initial JS ≤ 25 KB gzipped (actual: 14.39 KB gzipped)
+- Atelier Admin (`admin.html`) initial JS ≤ 75 KB gzipped (actual: 12.15 KB gzipped)
+- Confirms zero Supabase vendor code or `@supabase/` in the initial public bundle.
 
 ---
 

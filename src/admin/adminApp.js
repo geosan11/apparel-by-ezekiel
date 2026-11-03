@@ -1,6 +1,5 @@
 import '../styles/main.css';
 import { store, getStoreMode, setStoreMode, isBackendConnected } from '../store/index.js';
-import { supabaseAdapter } from '../store/supabase.js';
 import { parseExpenseText, CATEGORIES } from './expenseParser.js';
 
 // State
@@ -35,15 +34,18 @@ function checkAuthSession() {
   }
 
   if (isBackendConnected()) {
-    supabaseAdapter.getSession().then((sess) => {
-      if (sess) {
-        isAuthenticated = true;
-        isDemoSession = false;
-        showDashboard();
-      } else {
-        showLogin();
-      }
-    }).catch(() => showLogin());
+    import('../store/supabase.js')
+      .then(({ supabaseAdapter }) => supabaseAdapter.getSession())
+      .then((sess) => {
+        if (sess) {
+          isAuthenticated = true;
+          isDemoSession = false;
+          showDashboard();
+        } else {
+          showLogin();
+        }
+      })
+      .catch(() => showLogin());
   } else {
     showLogin();
   }
@@ -116,6 +118,7 @@ function setupEventListeners() {
       const errorEl = document.getElementById('authErrorMessage');
 
       try {
+        const { supabaseAdapter } = await import('../store/supabase.js');
         await supabaseAdapter.signIn(email, pass);
         sessionStorage.setItem('apparel_admin_auth', 'supabase');
         isDemoSession = false;
@@ -137,6 +140,7 @@ function setupEventListeners() {
     logoutBtn.addEventListener('click', async () => {
       sessionStorage.removeItem('apparel_admin_auth');
       if (!isDemoSession && isBackendConnected()) {
+        const { supabaseAdapter } = await import('../store/supabase.js');
         await supabaseAdapter.signOut().catch(() => {});
       }
       isAuthenticated = false;
