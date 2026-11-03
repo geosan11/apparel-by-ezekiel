@@ -8,9 +8,9 @@
 
 - **Framework-free:** Pure modern JavaScript (ES2022) with Vite tooling.
 - **Strict Bundle Isolation:** Two independent entries: `index.html` (public client site) and `admin.html` (atelier executive dashboard). The public bundle contains **zero** admin logic.
-- **Dynamic 3D & Supabase Import:** Three.js is imported dynamically via `import('three')` **only** when a client clicks the 3D Garment Preview. Supabase is loaded lazily only when configured. Initial public JavaScript bundle is **14.39 KB gzipped** (enforced by CI size budget checks: public ≤ 25 KB gz, admin ≤ 75 KB gz initial JS).
+- **Dynamic 3D & Supabase Import:** Three.js is imported dynamically via `import('three')` **only** when a client clicks the 3D Garment Preview. Supabase is loaded lazily only when configured. Initial public JavaScript bundle is **14.26 KB gzipped** (enforced by CI size budget checks: public ≤ 25 KB gz, admin ≤ 75 KB gz initial JS).
 - **Static Prerendering for WhatsApp & Social Sharing:** Build script generates static HTML pages in `dist/designs/<slug>/index.html` with Open Graph tags (`og:title`, `og:image`, `og:description`, `product:price`), ensuring link previews work on WhatsApp, iMessage, and Instagram.
-- **Zero-Upload Virtual Try-On:** All garment overlay positioning, scaling, rotation, and multi-touch gestures occur 100% in-browser on an HTML5 canvas. No client photo is ever sent to or stored on a server.
+- **Zero-Upload Virtual Try-On (Beta Polish):** Automatic pose-based placement powered by self-hosted MoveNet SinglePose Lightning v4. Downloaded lazily only when the Try-On modal is opened, with directional contact drop shadows and ambient light matching. All processing is 100% client-side in browser RAM—no photo is ever uploaded or transmitted anywhere.
 - **Dual Data Layer:** Unified store interface (`src/store/index.js`) supporting:
   1. **IndexedDB:** Default offline-first persistence engine with pre-seeded orders, expenses, and bookings.
   2. **Supabase:** PostgreSQL backend with Row-Level Security (RLS) policies, dynamically loaded only when environment variables are supplied.
@@ -58,9 +58,15 @@ Visit:
 ```bash
 npm test
 ```
-Runs 34 automated unit tests covering:
+Runs 53 automated unit tests covering:
 - Natural language rule-based expense parser (18k, 1.5m, ₦18000, N18000, 18,000, categories, dates: today/yesterday/last friday/ISO).
 - IndexedDB offline store adapter CRUD and backup import/export.
+- Virtual Try-On pose geometry (upright alignment, shoulder tilt angle & rotation sign, small vs large person scale, wide vs narrow shoulder scale, neck nudge, flowing Agbada/Kaftan allowance).
+- Image coordinate padding and normalized unpadding mapping.
+- Pose usability gating and confidence scoring.
+- Ambient light direction and luminance estimation.
+- Design anchor completeness across all catalog pieces.
+- Order Now design ID prefill into the bespoke booking flow.
 
 ### Production Build & Prerender
 ```bash
@@ -72,10 +78,11 @@ Compiles production assets to `/dist` and runs `scripts/prerender.js` to create 
 ```bash
 npm run size
 ```
-Verifies initial first-load JavaScript budgets via manifest analysis (`dist/.vite/manifest.json`):
-- Public site (`index.html`) initial JS ≤ 25 KB gzipped (actual: 14.39 KB gzipped)
-- Atelier Admin (`admin.html`) initial JS ≤ 75 KB gzipped (actual: 12.15 KB gzipped)
-- Confirms zero Supabase vendor code or `@supabase/` in the initial public bundle.
+Verifies initial first-load JavaScript and Try-On model download budgets via manifest analysis (`dist/.vite/manifest.json`):
+- Public site (`index.html`) initial JS ≤ 25 KB gzipped (actual: **14.26 KB gzipped**)
+- Atelier Admin (`admin.html`) initial JS ≤ 75 KB gzipped (actual: **12.15 KB gzipped**)
+- Try-on model & ML runtime download ≤ 8 MB raw (actual: **5.38 MB raw / 4.32 MB gzipped**)
+- Confirms zero Supabase and zero TensorFlow code in the initial public bundle.
 
 ---
 
@@ -146,7 +153,28 @@ To launch live commercial operations, the owner should supply:
 
 ---
 
-## 8. Compliance & Legal Notices
+## 8. Virtual Atelier Try-On (Beta Polish — MoveNet Lightning)
+
+The Virtual Try-On module places bespoke Nigerian garments directly onto the user's photo using automatic on-device pose estimation.
+
+- **Pose Model & Self-Hosting:** Powered by **MoveNet SinglePose Lightning v4** (TF.js graph model, Apache-2.0), self-hosted at `public/vendor/movenet/singlepose-lightning-4/`. Downloaded once only when the user opens Try-On (~4.6 MB model weights + JSON), cached separately in long-lived Service Worker cache `apparel-ml-movenet-lightning-4`.
+- **Why MoveNet Replaced MediaPipe:** The owner established a strict 8 MB download cap. MediaPipe PoseLandmarker Lite weighs ~20 MB raw / ~9 MB gzipped (14.5 MB wasm + 5.8 MB model), which breaks the budget. MoveNet Lightning with modular TF.js chunks totals **5.38 MB raw / 4.32 MB gzipped**, satisfying the cap.
+- **2D Canvas Compositing:**
+  - Soft directional contact drop shadow (2.4% blur offset away from estimated light side).
+  - Ambient light matching: extracts blurred greyscale photo tones under the garment and blends them via canvas multiply (0.40 strength) clipped to the garment alpha.
+  - Tone & warmth harmonization adjusting garment brightness and sepia to match ambient room lighting.
+  - Smooth 1px edge feathering.
+- **Zero-Upload Privacy Guarantee:** 100% client-side execution in browser RAM. User photos never leave the client's device and are never uploaded or sent across any network.
+- **Direct Order Now Action:** Clicking "Order Now" immediately closes Try-On and launches the booking fitting modal prefilled with the selected design ID, preserving the WhatsApp concierge link.
+- **Honest Limits:**
+  - Designed for front-facing, single person, upright posture with arms roughly down.
+  - Garments are handcrafted luxury editorial vector overlays; the aesthetic is intentionally an elegant "illustrated" atelier fitting, not photoreal 3D skinning.
+  - No real-time cloth physics simulation or drape deformation.
+- **Graceful Fallbacks:** If a pose cannot be detected, device memory is low (< 2 GB), Data Saver (`Save-Data`) is active, or WebGL/CPU initialization fails, the atelier calmly falls back to manual slider/drag mode.
+
+---
+
+## 9. Compliance & Legal Notices
 
 - **Nigeria Data Protection Act (NDPA) 2023:** Full privacy disclosure available on the site detailing data controller identity, lawful basis, customer rights, and retention policies.
 - **Zero-Upload Virtual Try-On:** All camera frames and user pictures remain strictly on-device in browser RAM. No images are uploaded to any server.

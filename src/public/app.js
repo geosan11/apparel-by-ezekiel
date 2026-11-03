@@ -1,7 +1,6 @@
 import '../styles/main.css';
 import { store } from '../store/index.js';
 import { open3DViewer, close3DViewer } from './viewer3d.js';
-import { VirtualTryOn } from './tryon.js';
 
 // State
 let allDesigns = [];
@@ -246,20 +245,163 @@ function open3DModal(design) {
   }
 }
 
-// Virtual Try-On Modal
-function openTryOnModal(initialDesign = null) {
+// Virtual Try-On Modal (Lazy Loaded)
+let tryOnModulesPromise = null;
+let currentTryOnDesign = null;
+let cachedPoseKeypoints = null;
+let forceLoadModel = false;
+
+async function getTryOnModules() {
+  if (!tryOnModulesPromise) {
+    tryOnModulesPromise = Promise.all([
+      import('./tryon.js'),
+      import('./tryon/pose.js'),
+      import('./tryon/fit.js'),
+      import('./tryon/anchors.js')
+    ]).then(([tryonMod, poseMod, fitMod, anchorsMod]) => ({
+      VirtualTryOn: tryonMod.VirtualTryOn,
+      loadPoseModel: poseMod.loadPoseModel,
+      detectPose: poseMod.detectPose,
+      computePlacement: fitMod.computePlacement,
+      isUsablePose: fitMod.isUsablePose,
+      getAnchors: anchorsMod.getAnchors
+    }));
+  }
+  return tryOnModulesPromise;
+}
+
+function setTryOnState(state, message = '', reason = '') {
+  const container = document.getElementById('tryonCanvasContainer');
+  const statusEl = document.getElementById('tryonStatusText');
+  if (container) {
+    container.setAttribute('data-tryon-state', state);
+    if (reason) {
+      container.setAttribute('data-tryon-reason', reason);
+    } else {
+      container.removeAttribute('data-tryon-reason');
+    }
+  }
+  if (statusEl) {
+    statusEl.innerHTML = message;
+  }
+}
+
+function applyPlacementForCurrentDesign(modules) {
+  if (!cachedPoseKeypoints || !tryOnInstance || !currentTryOnDesign) return;
+  const { computePlacement, getAnchors } = modules;
+  const anchors = getAnchors(currentTryOnDesign.id);
+  const placement = computePlacement(cachedPoseKeypoints, anchors, { width: 600, height: 750 });
+  tryOnInstance.setPlacement(placement);
+
+  const scaleSlider = document.getElementById('tryonScaleSlider');
+  if (scaleSlider) scaleSlider.value = placement.scale;
+  const rotateSlider = document.getElementById('tryonRotateSlider');
+  if (rotateSlider) rotateSlider.value = Math.round((placement.rotation * 180) / Math.PI);
+}
+
+async function autoFitUserPhoto(fileOrBlob, modules) {
+  const { loadPoseModel, detectPose, isUsablePose } = modules;
+
+  setTryOnState('loading-model', 'Loading photo…');
+  try {
+    await tryOnInstance.loadUserImage(fileOrBlob);
+  } catch (err) {
+    setTryOnState('manual', 'Failed to load photo. Manual fit mode is active.', 'load-error');
+    return;
+  }
+
+  // Network & resource fallbacks
+  if (!forceLoadModel && navigator.connection?.saveData) {
+    setTryOnState(
+      'manual',
+      'Data Saver is enabled. Manual fit mode active. <button type="button" class="btn btn-outline btn-sm" id="tryonForceLoadBtn" style="margin-left:6px;padding:1px 6px;font-size:0.75rem;">Load fitting model anyway</button>',
+      'save-data'
+    );
+    const forceBtn = document.getElementById('tryonForceLoadBtn');
+    if (forceBtn) {
+      forceBtn.onclick = () => {
+        forceLoadModel = true;
+        autoFitUserPhoto(fileOrBlob, modules);
+      };
+    }
+    return;
+  }
+
+  if (navigator.deviceMemory && navigator.deviceMemory < 2) {
+    setTryOnState('manual', 'Low device memory detected. Manual fit mode is active.', 'low-memory');
+    return;
+  }
+
+  // Load ML pose model with real progress numbers
+  setTryOnState('loading-model', 'Downloading fitting model…');
+  try {
+    await loadPoseModel({
+      onProgress: ({ loadedBytes, totalBytes }) => {
+        const loadedMb = (loadedBytes / (1024 * 1024)).toFixed(1);
+        const totalMb = (totalBytes / (1024 * 1024)).toFixed(1);
+        setTryOnState('loading-model', `Downloading fitting model · ${loadedMb} / ${totalMb} MB`);
+      }
+    });
+  } catch (err) {
+    const isUnsupported = err.message && err.message.includes('initialise');
+    setTryOnState(
+      'manual',
+      'Fitting model could not be loaded. Manual fit mode is active.',
+      isUnsupported ? 'unsupported' : 'load-error'
+    );
+    return;
+  }
+
+  // Fitting stage
+  setTryOnState('fitting', 'Fitting your garment…');
+  try {
+    const poseResult = await detectPose(tryOnInstance.userImage);
+    const usable = isUsablePose(poseResult?.keypoints, tryOnInstance.userImage.width);
+
+    if (!usable) {
+      cachedPoseKeypoints = null;
+      setTryOnState('manual', 'No clear pose detected. You can adjust the fit manually.', 'low-confidence');
+      return;
+    }
+
+    cachedPoseKeypoints = poseResult.keypoints;
+    applyPlacementForCurrentDesign(modules);
+    setTryOnState('auto', 'Garment fitted automatically to your pose.');
+  } catch (err) {
+    setTryOnState('manual', 'Pose estimation failed. Manual fit mode is active.', 'load-error');
+  }
+}
+
+async function openTryOnModal(initialDesign = null) {
   openModal('modalTryOn');
+
+  // Request persistent storage for ML model cache
+  navigator.storage?.persist?.().catch(() => {});
+
+  const modules = await getTryOnModules();
+  const { VirtualTryOn } = modules;
+
+  currentTryOnDesign = initialDesign || allDesigns[0];
 
   const canvas = document.getElementById('tryonCanvas');
   if (!tryOnInstance && canvas) {
-    tryOnInstance = new VirtualTryOn(canvas);
+    tryOnInstance = new VirtualTryOn(canvas, {
+      onStateChange: (state) => {
+        if (state.isAdjusting) {
+          const container = document.getElementById('tryonCanvasContainer');
+          if (container && container.getAttribute('data-tryon-state') === 'auto') {
+            setTryOnState('manual', 'Manual fit adjustment active.', 'manual-adjustment');
+          }
+        }
+      }
+    });
   }
 
   // Populate garment selector pills
   const pillList = document.getElementById('tryonGarmentList');
   if (pillList) {
     pillList.innerHTML = allDesigns.map((d) => `
-      <button class="btn btn-sm btn-outline tryon-select-pill ${initialDesign && initialDesign.id === d.id ? 'active' : ''}" 
+      <button class="btn btn-sm btn-outline tryon-select-pill ${currentTryOnDesign && currentTryOnDesign.id === d.id ? 'active' : ''}" 
         data-overlay="${d.overlayImage}" data-id="${d.id}">
         ${d.title}
       </button>
@@ -269,15 +411,44 @@ function openTryOnModal(initialDesign = null) {
       pill.addEventListener('click', () => {
         pillList.querySelectorAll('.tryon-select-pill').forEach((p) => p.classList.remove('active'));
         pill.classList.add('active');
-        tryOnInstance.loadGarment(pill.dataset.overlay);
+        const selected = allDesigns.find((d) => d.id === pill.dataset.id);
+        if (selected) {
+          currentTryOnDesign = selected;
+          tryOnInstance.loadGarment(selected.overlayImage);
+          const container = document.getElementById('tryonCanvasContainer');
+          if (cachedPoseKeypoints && container && container.getAttribute('data-tryon-state') === 'auto') {
+            applyPlacementForCurrentDesign(modules);
+          }
+        }
       });
     });
   }
 
   // Load initial garment overlay
-  const garmentToLoad = initialDesign || allDesigns[0];
-  if (garmentToLoad && tryOnInstance) {
-    tryOnInstance.loadGarment(garmentToLoad.overlayImage);
+  if (currentTryOnDesign && tryOnInstance) {
+    tryOnInstance.loadGarment(currentTryOnDesign.overlayImage);
+  }
+
+  // Order Now button: opens booking prefilled with the currently selected design
+  const orderNowBtn = document.getElementById('tryonOrderNowBtn');
+  if (orderNowBtn) {
+    orderNowBtn.onclick = () => {
+      closeModal('modalTryOn');
+      openBookingModal(currentTryOnDesign);
+    };
+  }
+
+  // Adjust Toggle disclosure
+  const adjustToggle = document.getElementById('tryonAdjustToggle');
+  const adjustControls = document.getElementById('tryonAdjustControls');
+  const adjustArrow = document.getElementById('tryonAdjustArrow');
+  if (adjustToggle && adjustControls) {
+    adjustToggle.onclick = () => {
+      const isClosed = adjustControls.style.display === 'none';
+      adjustControls.style.display = isClosed ? 'block' : 'none';
+      adjustToggle.setAttribute('aria-expanded', isClosed ? 'true' : 'false');
+      if (adjustArrow) adjustArrow.textContent = isClosed ? '▴' : '▾';
+    };
   }
 
   // File upload input
@@ -285,7 +456,7 @@ function openTryOnModal(initialDesign = null) {
   if (fileInput) {
     fileInput.onchange = (e) => {
       if (e.target.files && e.target.files[0]) {
-        tryOnInstance.loadUserImage(e.target.files[0]);
+        autoFitUserPhoto(e.target.files[0], modules);
       }
     };
   }
@@ -307,7 +478,7 @@ function openTryOnModal(initialDesign = null) {
             const ctx = captureCanvas.getContext('2d');
             ctx.drawImage(video, 0, 0);
             captureCanvas.toBlob((blob) => {
-              tryOnInstance.loadUserImage(blob);
+              autoFitUserPhoto(blob, modules);
               stream.getTracks().forEach((track) => track.stop());
             }, 'image/jpeg');
           }, 300);

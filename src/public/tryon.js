@@ -2,12 +2,15 @@
  * Virtual Try-On Canvas (Beta)
  * 100% on-device processing. No images uploaded.
  * Supports:
- * - Photo from file or live camera
- * - Design overlay garment selection
- * - Pointer drag, scale, and rotate
- * - Multi-touch pinch-to-zoom and two-finger rotate
- * - Canvas export / download as high-res PNG
+ * - Photo from file or live camera with EXIF orientation & downscaling to <= 1024px
+ * - Automatic pose-based placement via MoveNet Lightning v4
+ * - Realistic 2D compositing with contact drop shadow and ambient light matching
+ * - Manual fine-tune via drag, sliders, wheel zoom, and multi-touch pinch/rotate
+ * - Canvas export / download as high-res PNG with luxury atelier watermark
  */
+
+import { renderCompositedGarment, computeLuminanceStats } from './tryon/shade.js';
+import { estimateLight } from './tryon/fit.js';
 
 export class VirtualTryOn {
   constructor(canvasElement, options = {}) {
@@ -15,6 +18,7 @@ export class VirtualTryOn {
     this.ctx = canvasElement.getContext('2d');
     this.userImage = null;
     this.garmentImage = null;
+    this.lightInfo = null;
 
     // Garment transform state (in canvas coordinate space)
     this.transform = {
@@ -37,20 +41,70 @@ export class VirtualTryOn {
     this.render();
   }
 
-  loadUserImage(fileOrBlob) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        this.userImage = img;
-        this.fitCanvasToImage();
-        this.resetGarmentTransform();
-        this.render();
-        this.onStateChange({ hasUserImage: true });
-        resolve(img);
-      };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(fileOrBlob);
+  /**
+   * Loads user image from File, Blob, or ImageBitmap.
+   * Respects EXIF orientation and downscales to <= 1024px on long edge.
+   */
+  async loadUserImage(fileOrBlob) {
+    let sourceBitmap = null;
+
+    if (fileOrBlob instanceof ImageBitmap) {
+      sourceBitmap = fileOrBlob;
+    } else {
+      try {
+        // Respect EXIF orientation
+        sourceBitmap = await createImageBitmap(fileOrBlob, { imageOrientation: 'from-image' });
+      } catch (err) {
+        try {
+          sourceBitmap = await createImageBitmap(fileOrBlob);
+        } catch (bitmapErr) {
+          sourceBitmap = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = URL.createObjectURL(fileOrBlob);
+          });
+        }
+      }
+    }
+
+    // Downscale to <= 1024px on long edge for performance & memory efficiency
+    const maxDim = 1024;
+    let w = sourceBitmap.width || sourceBitmap.naturalWidth || 600;
+    let h = sourceBitmap.height || sourceBitmap.naturalHeight || 800;
+
+    if (w > maxDim || h > maxDim) {
+      const ratio = Math.min(maxDim / w, maxDim / h);
+      w = Math.round(w * ratio);
+      h = Math.round(h * ratio);
+    }
+
+    const scaledCanvas = document.createElement('canvas');
+    scaledCanvas.width = w;
+    scaledCanvas.height = h;
+    const scaledCtx = scaledCanvas.getContext('2d');
+    scaledCtx.drawImage(sourceBitmap, 0, 0, w, h);
+
+    this.userImage = scaledCanvas;
+
+    // Estimate ambient light direction and luminance
+    const stats = computeLuminanceStats(scaledCanvas);
+    this.lightInfo = estimateLight(stats);
+
+    this.fitCanvasToImage();
+    this.resetGarmentTransform();
+    this.render();
+
+    this.onStateChange({
+      hasUserImage: true,
+      userImage: this.userImage,
+      lightInfo: this.lightInfo
     });
+
+    return {
+      image: this.userImage,
+      lightInfo: this.lightInfo
+    };
   }
 
   loadGarment(url) {
@@ -59,7 +113,10 @@ export class VirtualTryOn {
       img.crossOrigin = 'anonymous';
       img.onload = () => {
         this.garmentImage = img;
-        this.resetGarmentTransform();
+        // If we don't already have an automatic placement, set default
+        if (this.transform.scale === 1 && this.transform.x === 0 && this.transform.y === 0) {
+          this.resetGarmentTransform();
+        }
         this.render();
         this.onStateChange({ hasGarmentImage: true });
         resolve(img);
@@ -69,6 +126,23 @@ export class VirtualTryOn {
     });
   }
 
+  /**
+   * Applies an automatic pose-derived placement.
+   */
+  setPlacement(placement) {
+    if (!placement) return;
+    this.transform.x = placement.x;
+    this.transform.y = placement.y;
+    this.transform.scale = placement.scale;
+    this.transform.rotation = placement.rotation;
+    this.render();
+  }
+
+  setLightInfo(info) {
+    this.lightInfo = info;
+    this.render();
+  }
+
   fitCanvasToImage() {
     if (!this.userImage) {
       this.canvas.width = 600;
@@ -76,19 +150,8 @@ export class VirtualTryOn {
       return;
     }
 
-    // Set internal resolution up to 1200 max dimension for sharp rendering
-    const maxDim = 1200;
-    let w = this.userImage.naturalWidth || 600;
-    let h = this.userImage.naturalHeight || 800;
-
-    if (w > maxDim || h > maxDim) {
-      const ratio = Math.min(maxDim / w, maxDim / h);
-      w = Math.round(w * ratio);
-      h = Math.round(h * ratio);
-    }
-
-    this.canvas.width = w;
-    this.canvas.height = h;
+    this.canvas.width = this.userImage.width;
+    this.canvas.height = this.userImage.height;
   }
 
   resetGarmentTransform() {
@@ -97,11 +160,11 @@ export class VirtualTryOn {
     const cw = this.canvas.width || 600;
     const ch = this.canvas.height || 800;
 
-    // Center garment over chest area (approx 45% down)
+    // Center garment over chest area
     this.transform.x = cw / 2;
     this.transform.y = ch * 0.52;
 
-    // Scale garment to fill roughly 65% of canvas width
+    // Scale garment to fill roughly 72% of canvas width
     const gw = this.garmentImage.naturalWidth || 600;
     const targetWidth = cw * 0.72;
     this.transform.scale = targetWidth / gw;
@@ -109,7 +172,7 @@ export class VirtualTryOn {
   }
 
   setManualScale(factor) {
-    this.transform.scale = Math.max(0.2, Math.min(3.5, factor));
+    this.transform.scale = Math.max(0.15, Math.min(3.5, factor));
     this.render();
   }
 
@@ -155,27 +218,17 @@ export class VirtualTryOn {
       ctx.fillText('Upload a photo or capture via camera to begin fitting', cw / 2, ch / 2);
     }
 
-    // 2. Draw Garment Overlay
+    // 2. Draw Garment Overlay with Light Matching & Soft Shadow
     if (this.garmentImage) {
-      ctx.save();
-      ctx.translate(this.transform.x, this.transform.y);
-      ctx.rotate(this.transform.rotation);
-      ctx.scale(this.transform.scale, this.transform.scale);
-
-      const gw = this.garmentImage.naturalWidth || 600;
-      const gh = this.garmentImage.naturalHeight || 750;
-
-      // Draw centered around the anchor point
-      ctx.drawImage(this.garmentImage, -gw / 2, -gh / 2, gw, gh);
-
-      // Subtle transform bounding frame when dragging
-      if (this.isDragging) {
-        ctx.strokeStyle = 'rgba(184, 155, 106, 0.6)';
-        ctx.lineWidth = 2 / this.transform.scale;
-        ctx.strokeRect(-gw / 2, -gh / 2, gw, gh);
-      }
-
-      ctx.restore();
+      renderCompositedGarment(ctx, {
+        garmentImage: this.garmentImage,
+        userImage: this.userImage,
+        transform: this.transform,
+        lightInfo: this.lightInfo,
+        canvasWidth: cw,
+        canvasHeight: ch,
+        isDragging: this.isDragging
+      });
     }
   }
 
@@ -199,6 +252,7 @@ export class VirtualTryOn {
       this.isDragging = true;
       this.lastPointer = this.getCanvasCoordinates(e);
       this.render();
+      this.onStateChange({ isAdjusting: true });
     });
 
     el.addEventListener('pointermove', (e) => {
@@ -211,6 +265,7 @@ export class VirtualTryOn {
       this.transform.y += dy;
       this.lastPointer = current;
       this.render();
+      this.onStateChange({ isAdjusting: true, transform: this.transform });
     });
 
     const pointerUpHandler = (e) => {
@@ -218,6 +273,7 @@ export class VirtualTryOn {
         this.isDragging = false;
         try { el.releasePointerCapture(e.pointerId); } catch (err) {}
         this.render();
+        this.onStateChange({ isAdjusting: false, transform: this.transform });
       }
     };
 
@@ -233,6 +289,7 @@ export class VirtualTryOn {
         this.touchStartAngle = Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX);
         this.initialScale = this.transform.scale;
         this.initialRotation = this.transform.rotation;
+        this.onStateChange({ isAdjusting: true });
       }
     }, { passive: true });
 
@@ -246,7 +303,7 @@ export class VirtualTryOn {
         // Pinch scale
         if (this.touchPinchDistance > 0) {
           const factor = dist / this.touchPinchDistance;
-          this.transform.scale = Math.max(0.2, Math.min(3.5, this.initialScale * factor));
+          this.transform.scale = Math.max(0.15, Math.min(3.5, this.initialScale * factor));
         }
 
         // Two-finger rotate
@@ -254,6 +311,7 @@ export class VirtualTryOn {
         this.transform.rotation = this.initialRotation + angleDiff;
 
         this.render();
+        this.onStateChange({ isAdjusting: true, transform: this.transform });
       }
     }, { passive: true });
 
@@ -262,13 +320,14 @@ export class VirtualTryOn {
       if (!this.garmentImage) return;
       e.preventDefault();
       const zoomFactor = e.deltaY < 0 ? 1.05 : 0.95;
-      this.transform.scale = Math.max(0.2, Math.min(3.5, this.transform.scale * zoomFactor));
+      this.transform.scale = Math.max(0.15, Math.min(3.5, this.transform.scale * zoomFactor));
       this.render();
+      this.onStateChange({ isAdjusting: true, transform: this.transform });
     }, { passive: false });
   }
 
   downloadResult(filename = 'apparel-by-ezekiel-tryon.png') {
-    // Render final clean frame without debug bounding lines
+    // Render final clean frame without interactive bounding lines
     this.isDragging = false;
     this.render();
 
