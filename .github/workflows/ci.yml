@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/*]
+    branches: [main, feat/*, perf/*]
   pull_request:
     branches: [main]
 
@@ -27,3 +27,6 @@ jobs:
 
       - name: Build Production Assets & Prerender
         run: npm run build
+
+      - name: Check first-load size budgets
+        run: npm run size
