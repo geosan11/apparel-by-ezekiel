@@ -8,7 +8,7 @@ Vite foundation, Supabase-ready data layer (IndexedDB offline adapter), public s
 ### 1. Try-On Beta Polish ("Image 1" direction)
 Realistic garment overlay on the user's uploaded photo: natural drape, soft lighting, and a clear **Order Now** button. Replaces the v1 placeholder try-on. Needs its own plan and review before building.
 
-### 2. Simple CRM
+### 2. Simple CRM (built — pending owner review)
 Principles: extreme simplicity, progressive disclosure, only essential fields. Calm and premium.
 - Minimal customer list: name, phone, status dot
 - Add Customer: Name, Phone, Source only

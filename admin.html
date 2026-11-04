@@ -14,8 +14,15 @@
       border-bottom: 1px solid var(--color-border-subtle);
       margin-bottom: 24px;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+    }
+    .admin-nav-bar::-webkit-scrollbar {
+      display: none;
     }
     .admin-nav-tab {
+      flex-shrink: 0;
       background: none;
       border: none;
       border-bottom: 2px solid transparent;
@@ -101,6 +108,9 @@
 </head>
 <body style="background-color: var(--color-bg);">
 
+  <!-- Top Store Version / Blocked Banner -->
+  <div id="storeNoticeBanner" style="display: none; position: sticky; top: 0; z-index: 100; background: var(--color-bg-elevated); color: var(--color-text-primary); border-bottom: 1px solid var(--color-gold); padding: 12px 24px; text-align: center; font-size: 0.85rem;"></div>
+
   <!-- 1. LOGIN SCREEN -->
   <div id="adminLoginView" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;">
     <div style="width: 100%; max-width: 440px; background: var(--color-bg-card); border: 1px solid var(--color-border); padding: 36px 32px; border-radius: 2px; box-shadow: var(--shadow-lift);">
@@ -168,10 +178,28 @@
     </header>
 
     <main class="container" style="padding-top: 24px; padding-bottom: 64px;">
+      <!-- Pre-update Backup Banner -->
+      <div id="preV2BackupBanner" style="display: none; background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-left: 3px solid var(--color-gold); padding: 14px 20px; border-radius: 2px; margin-bottom: 24px; font-family: var(--font-body);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+          <div style="font-size: 0.88rem; color: var(--color-text-primary); line-height: 1.5;">
+            Your data was updated for Clients. A backup of your previous data is ready.
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; flex-shrink: 0;">
+            <button type="button" id="downloadPreV2BackupBannerBtn" class="btn btn-primary btn-sm">
+              Download backup
+            </button>
+            <button type="button" id="dismissPreV2BackupBannerBtn" style="background: none; border: none; color: var(--color-text-secondary); cursor: pointer; font-size: 0.82rem; padding: 6px 10px; text-decoration: underline; font-family: inherit;">
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab Navigation -->
       <nav class="admin-nav-bar" role="tablist">
         <button class="admin-nav-tab active" data-tab="overview">Overview</button>
         <button class="admin-nav-tab" data-tab="orders">Orders</button>
+        <button class="admin-nav-tab" data-tab="clients">Clients</button>
         <button class="admin-nav-tab" data-tab="expenses">Expenses & Chat</button>
         <button class="admin-nav-tab" data-tab="settings">Backup & Settings</button>
       </nav>
@@ -278,7 +306,36 @@
         </div>
       </section>
 
-      <!-- TAB 3: EXPENSES & CHAT -->
+      <!-- TAB 3: CLIENTS (CRM) -->
+      <section id="tab-clients" class="admin-tab-screen" style="display: none;">
+        <!-- Single Follow-up Reminder Card Container (max ONE card) -->
+        <div id="crmFollowUpCardContainer" style="display: none;"></div>
+
+        <!-- Header Row -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <h2 style="font-family: var(--font-display); font-size: 1.8rem; margin: 0;">Clients</h2>
+            <button type="button" id="crmSearchToggleBtn" class="btn btn-outline btn-sm" style="padding: 6px 12px; min-width: 44px; min-height: 44px;" aria-label="Search clients">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </button>
+            <input type="search" id="crmSearchInput" class="form-input" placeholder="Filter by name or phone..." style="display: none; width: 220px; padding: 6px 12px; font-size: 0.85rem;" />
+          </div>
+
+          <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('addCustomerModal').classList.add('open')">
+            + Add Customer
+          </button>
+        </div>
+
+        <!-- Minimal Customer List: dot + name + phone -->
+        <div style="background: var(--color-bg-card); border: 1px solid var(--color-border-subtle); border-radius: 2px; overflow: hidden;">
+          <div id="crmClientsList"></div>
+        </div>
+      </section>
+
+      <!-- TAB 4: EXPENSES & CHAT -->
       <section id="tab-expenses" class="admin-tab-screen" style="display: none;">
         <div style="display: grid; grid-template-columns: 1fr; gap: 24px;">
           <!-- Natural Language Expense Chat Box -->
@@ -361,12 +418,32 @@
       <!-- TAB 4: SETTINGS & BACKUP -->
       <section id="tab-settings" class="admin-tab-screen" style="display: none;">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
-          <!-- Backup Card -->
+          <!-- Backup & Preferences Card -->
           <div style="background: var(--color-bg-card); border: 1px solid var(--color-border); padding: 24px; border-radius: 2px;">
-            <span class="label-caps">Data Portability</span>
-            <h3 style="margin: 6px 0 12px;">JSON Database Backup</h3>
-            <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 20px;">
-              Export full atelier records (designs, bookings, orders, expenses, and drop subscribers) to a local JSON archive.
+            <span class="label-caps">Atelier Preferences & Portability</span>
+            <h3 style="margin: 6px 0 12px;">Database & Measurement Settings</h3>
+            
+            <!-- Pre-update backup notice banner -->
+            <div id="preV2BackupNotice" style="display: none; padding: 14px 16px; background: rgba(184, 155, 106, 0.1); border: 1px solid var(--color-border); border-radius: 2px; margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <span style="font-size: 0.88rem; color: var(--color-text-primary);">Pre-update backup available</span>
+                <button type="button" id="downloadPreV2BackupBtn" class="btn btn-primary btn-sm">
+                  Download Pre-v2 Backup
+                </button>
+              </div>
+            </div>
+
+            <!-- ONE measurement unit control -->
+            <div class="form-group" style="margin-bottom: 24px;">
+              <label class="form-label" for="settingMeasureUnit">Measurement unit</label>
+              <select id="settingMeasureUnit" class="form-select" style="max-width: 260px;">
+                <option value="in">Inches (")</option>
+                <option value="cm">Centimetres (cm)</option>
+              </select>
+            </div>
+
+            <p style="font-size: 0.88rem; color: var(--color-text-secondary); margin-bottom: 16px;">
+              Export full atelier records (designs, bookings, orders, expenses, subscribers, and clients) to a local JSON archive.
             </p>
             <div style="display: flex; flex-direction: column; gap: 12px;">
               <button id="exportBackupBtn" class="btn btn-primary">
@@ -463,6 +540,50 @@
           <button type="submit" class="btn btn-primary" style="width: 100%;">Save Order</button>
         </form>
       </div>
+    </div>
+  </div>
+
+  <!-- Add Customer Modal -->
+  <div class="modal-backdrop" id="addCustomerModal" role="dialog" aria-modal="true">
+    <div class="modal-panel" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3>Add Customer</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('addCustomerModal').classList.remove('open')">✕</button>
+      </div>
+      <div class="modal-content">
+        <form id="addCustomerForm">
+          <div class="form-group">
+            <label class="form-label" for="addCustName">Name *</label>
+            <input type="text" id="addCustName" class="form-input" placeholder="e.g. Chief Femi Kuti" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addCustPhone">Phone *</label>
+            <input type="tel" id="addCustPhone" class="form-input" placeholder="e.g. 0803 123 4567" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="addCustSource">Source *</label>
+            <select id="addCustSource" class="form-select" required>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Instagram">Instagram</option>
+              <option value="Walk-in">Walk-in</option>
+              <option value="Site">Site</option>
+              <option value="Referral">Referral</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width: 100%;">Save Customer</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer Profile Modal -->
+  <div class="modal-backdrop" id="customerProfileModal" role="dialog" aria-modal="true">
+    <div class="modal-panel" style="max-width: 580px;">
+      <div class="modal-header" style="border-bottom: 1px solid var(--color-border-subtle);">
+        <span class="label-caps">Client Profile</span>
+        <button class="modal-close-btn" onclick="document.getElementById('customerProfileModal').classList.remove('open')">✕</button>
+      </div>
+      <div class="modal-content" id="customerProfileContent"></div>
     </div>
   </div>
 
