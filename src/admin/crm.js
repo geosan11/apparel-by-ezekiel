@@ -282,15 +282,4 @@ export function rebuildCustomersFromOrders(existingCustomers = [], orders = [], 
   return newCustomers;
 }
 
-/**
- * Escapes user-entered strings for secure innerHTML injection.
- */
-export function escapeHtml(str) {
-  if (str === null || str === undefined) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+export { escapeHtml } from '../utils/escapeHtml.js';
