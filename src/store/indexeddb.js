@@ -1,9 +1,9 @@
 import initialDesigns from '../../data/designs.json';
 
 const DB_NAME = 'apparel_by_ezekiel_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
-const STORES = ['designs', 'bookings', 'orders', 'expenses', 'subscribers'];
+const STORES = ['designs', 'bookings', 'orders', 'expenses', 'subscribers', 'customers'];
 
 const DEMO_ORDERS = [
   {
@@ -196,7 +196,61 @@ const DEMO_SUBSCRIBERS = [
   { id: 'SUB-3', contact: 'olumide.luxury@gmail.com', channel: 'email', created_at: '2026-11-03T09:10:00Z' }
 ];
 
-// In-memory fallback if IndexedDB is unavailable
+// Lazy loader for CRM pure utilities to keep CRM out of the public bundle
+let cachedCrmModule = null;
+async function getCrm() {
+  if (!cachedCrmModule) {
+    cachedCrmModule = await import('../admin/crm.js');
+  }
+  return cachedCrmModule;
+}
+
+// Upgrade and version change notification hooks
+const upgradeBlockedListeners = [];
+const versionChangeListeners = [];
+
+export function onUpgradeBlocked(callback) {
+  if (typeof callback === 'function') upgradeBlockedListeners.push(callback);
+}
+
+export function onVersionChange(callback) {
+  if (typeof callback === 'function') versionChangeListeners.push(callback);
+}
+
+function buildSeededDemoCustomers(crm) {
+  const customers = crm.rebuildCustomersFromOrders([], DEMO_ORDERS, DEMO_BOOKINGS);
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Measurements on one demo customer (Dr. Adebayo Alabi)
+  const custWithMeasurements = customers.find((c) => c.name.includes('Adebayo') || c.name.includes('Alabi')) || customers[0];
+  if (custWithMeasurements) {
+    custWithMeasurements.measurements = {
+      chest: 44,
+      waist: 38,
+      hips: 42,
+      shoulder: 19.5,
+      sleeve: 26,
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  // Follow-up due today on another demo customer (Chief Femi Kuti)
+  const custWithFollowUp = customers.find(
+    (c) => (c.name.includes('Kuti') || c.name.includes('Femi')) && c !== custWithMeasurements
+  ) || customers[1];
+
+  if (custWithFollowUp) {
+    custWithFollowUp.follow_up = {
+      due: today,
+      note: 'Call regarding fitting schedule for State Banquet',
+      done_at: null
+    };
+  }
+
+  return customers;
+}
+
+// In-memory fallback if IndexedDB is unavailable (vitest / SSR)
 let memoryStores = null;
 
 function initMemoryFallback() {
@@ -205,17 +259,119 @@ function initMemoryFallback() {
       const saved = localStorage.getItem('apparel_backup_data');
       if (saved) {
         memoryStores = JSON.parse(saved);
+        if (!memoryStores.customers) memoryStores.customers = [];
         return;
       }
     } catch (e) {
       // ignore
     }
+
+    // Deterministic fallback customers before async crm loads
+    const initialCustomers = [
+      {
+        id: 'CUS-DEMO-1',
+        name: 'Dr. Adebayo Alabi',
+        phone: '+2348031234567',
+        phone_norm: '+2348031234567',
+        source: 'Site',
+        measurements: {
+          chest: 44,
+          waist: 38,
+          hips: 42,
+          shoulder: 19.5,
+          sleeve: 26,
+          updated_at: '2026-11-01T10:00:00Z'
+        },
+        notes: '',
+        follow_up: null,
+        created_at: '2026-11-01T10:00:00Z',
+        updated_at: '2026-11-01T10:00:00Z'
+      },
+      {
+        id: 'CUS-DEMO-2',
+        name: 'Chief Femi Kuti',
+        phone: '+2348022233445',
+        phone_norm: '+2348022233445',
+        source: 'WhatsApp',
+        measurements: null,
+        notes: '',
+        follow_up: {
+          due: new Date().toISOString().slice(0, 10),
+          note: 'Call regarding fitting schedule for State Banquet',
+          done_at: null
+        },
+        created_at: '2026-10-28T09:00:00Z',
+        updated_at: '2026-10-28T09:00:00Z'
+      },
+      {
+        id: 'CUS-DEMO-3',
+        name: 'Tunde Bakare',
+        phone: '+2348129876543',
+        phone_norm: '+2348129876543',
+        source: 'Instagram',
+        measurements: null,
+        notes: '',
+        follow_up: null,
+        created_at: '2026-11-02T16:20:00Z',
+        updated_at: '2026-11-02T16:20:00Z'
+      },
+      {
+        id: 'CUS-DEMO-4',
+        name: 'Emeka Okonkwo',
+        phone: '+2349051112233',
+        phone_norm: '+2349051112233',
+        source: 'Walk-in',
+        measurements: null,
+        notes: '',
+        follow_up: null,
+        created_at: '2026-11-03T08:15:00Z',
+        updated_at: '2026-11-03T08:15:00Z'
+      },
+      {
+        id: 'CUS-DEMO-5',
+        name: 'Senator Bello',
+        phone: '+2348090001122',
+        phone_norm: '+2348090001122',
+        source: 'WhatsApp',
+        measurements: null,
+        notes: '',
+        follow_up: null,
+        created_at: '2026-10-20T12:00:00Z',
+        updated_at: '2026-10-20T12:00:00Z'
+      },
+      {
+        id: 'CUS-DEMO-6',
+        name: 'Babatunde Davies',
+        phone: '+2348129876543',
+        phone_norm: '+2348129876543',
+        source: 'Site',
+        measurements: null,
+        notes: '',
+        follow_up: null,
+        created_at: '2026-11-02T14:10:00Z',
+        updated_at: '2026-11-02T14:10:00Z'
+      },
+      {
+        id: 'CUS-DEMO-7',
+        name: 'Chidi Eze',
+        phone: '+2349051112233',
+        phone_norm: '+2349051112233',
+        source: 'Site',
+        measurements: null,
+        notes: '',
+        follow_up: null,
+        created_at: '2026-11-03T07:30:00Z',
+        updated_at: '2026-11-03T07:30:00Z'
+      }
+    ];
+
     memoryStores = {
       designs: [...initialDesigns],
       bookings: [...DEMO_BOOKINGS],
       orders: [...DEMO_ORDERS],
       expenses: [...DEMO_EXPENSES],
-      subscribers: [...DEMO_SUBSCRIBERS]
+      subscribers: [...DEMO_SUBSCRIBERS],
+      customers: initialCustomers
     };
   }
 }
@@ -243,9 +399,66 @@ function openDB() {
   return new Promise((resolve) => {
     try {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
+      let needsCustomerRebuildAfterUpgrade = false;
+
+      request.onblocked = () => {
+        upgradeBlockedListeners.forEach((fn) => {
+          try { fn(); } catch (e) {}
+        });
+      };
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
+        const tx = event.target.transaction;
+        const oldVersion = event.oldVersion;
+
+        // Upgrade safety: when oldVersion is 1, take snapshot to localStorage 'apparel_pre_v2_backup'
+        if (oldVersion === 1) {
+          needsCustomerRebuildAfterUpgrade = true;
+          if (typeof localStorage !== 'undefined') {
+            try {
+              const v1Stores = ['designs', 'bookings', 'orders', 'expenses', 'subscribers'];
+              const snapshotData = {};
+              let pending = v1Stores.length;
+
+              const finish = () => {
+                pending--;
+                if (pending === 0) {
+                  try {
+                    localStorage.setItem(
+                      'apparel_pre_v2_backup',
+                      JSON.stringify({
+                        version: 1,
+                        appName: 'Apparel by Ezekiel',
+                        exportedAt: new Date().toISOString(),
+                        data: snapshotData
+                      })
+                    );
+                  } catch (err) {}
+                }
+              };
+
+              for (const sName of v1Stores) {
+                if (db.objectStoreNames.contains(sName)) {
+                  const req = tx.objectStore(sName).getAll();
+                  req.onsuccess = () => {
+                    snapshotData[sName] = req.result || [];
+                    finish();
+                  };
+                  req.onerror = () => {
+                    finish();
+                  };
+                } else {
+                  finish();
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+        }
+
+        // Additive upgrade only: create missing stores
         for (const storeName of STORES) {
           if (!db.objectStoreNames.contains(storeName)) {
             db.createObjectStore(storeName, { keyPath: 'id' });
@@ -253,10 +466,32 @@ function openDB() {
         }
       };
 
-      request.onsuccess = (event) => {
+      request.onsuccess = async (event) => {
         dbInstance = event.target.result;
+
+        dbInstance.onversionchange = () => {
+          try {
+            dbInstance.close();
+            dbInstance = null;
+          } catch (e) {}
+          versionChangeListeners.forEach((fn) => {
+            try { fn(); } catch (e) {}
+          });
+        };
+
         // Seed if empty
-        seedIfEmpty(dbInstance).then(() => resolve(dbInstance));
+        await seedIfEmpty(dbInstance);
+
+        // If upgraded from v1, rebuild customers from existing orders & bookings
+        if (needsCustomerRebuildAfterUpgrade) {
+          try {
+            await syncRebuiltCustomers(dbInstance);
+          } catch (err) {
+            console.warn('Rebuild customers after upgrade error:', err);
+          }
+        }
+
+        resolve(dbInstance);
       };
 
       request.onerror = () => {
@@ -270,19 +505,43 @@ function openDB() {
   });
 }
 
+async function syncRebuiltCustomers(db) {
+  const crm = await getCrm();
+  const [customers, orders, bookings] = await Promise.all([
+    getAllRecords(db, 'customers'),
+    getAllRecords(db, 'orders'),
+    getAllRecords(db, 'bookings')
+  ]);
+  const newOnes = crm.rebuildCustomersFromOrders(customers, orders, bookings);
+  for (const c of newOnes) {
+    await putRecord(db, 'customers', c);
+  }
+}
+
 async function seedIfEmpty(db) {
   const designs = await getAllRecords(db, 'designs');
   if (designs.length === 0) {
+    const crm = await getCrm();
     const tx = db.transaction(STORES, 'readwrite');
     for (const d of initialDesigns) tx.objectStore('designs').put(d);
     for (const b of DEMO_BOOKINGS) tx.objectStore('bookings').put(b);
     for (const o of DEMO_ORDERS) tx.objectStore('orders').put(o);
     for (const exp of DEMO_EXPENSES) tx.objectStore('expenses').put(exp);
     for (const s of DEMO_SUBSCRIBERS) tx.objectStore('subscribers').put(s);
+
+    const demoCustomers = buildSeededDemoCustomers(crm);
+    for (const c of demoCustomers) tx.objectStore('customers').put(c);
+
     return new Promise((res) => {
       tx.oncomplete = () => res(true);
       tx.onerror = () => res(false);
     });
+  } else {
+    // If designs exist but customers is empty, rebuild from orders
+    const existingCustomers = await getAllRecords(db, 'customers');
+    if (existingCustomers.length === 0) {
+      await syncRebuiltCustomers(db);
+    }
   }
 }
 
@@ -478,18 +737,74 @@ export const indexedDBAdapter = {
     return putRecord(db, 'subscribers', record);
   },
 
+  // CRM: Customers CRUD
+  async getCustomers() {
+    const db = await openDB();
+    const customers = await getAllRecords(db, 'customers');
+    return customers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  },
+
+  async addCustomer(customer) {
+    const db = await openDB();
+    const crm = await getCrm();
+    const now = new Date().toISOString();
+    const phone = customer.phone ? String(customer.phone).trim() : '';
+    const record = {
+      id: customer.id || `CUS-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      name: customer.name ? String(customer.name).trim() : '',
+      phone,
+      phone_norm: crm.normalizePhone(phone),
+      source: customer.source || 'Site',
+      measurements: customer.measurements || null,
+      notes: customer.notes || '',
+      follow_up: customer.follow_up || null,
+      created_at: customer.created_at || now,
+      updated_at: customer.updated_at || now,
+      ...customer
+    };
+    record.phone_norm = crm.normalizePhone(record.phone);
+    return putRecord(db, 'customers', record);
+  },
+
+  async updateCustomer(id, updates) {
+    const db = await openDB();
+    const customers = await getAllRecords(db, 'customers');
+    const existing = customers.find((c) => c.id === id);
+    if (!existing) throw new Error(`Customer ${id} not found`);
+
+    const updated = {
+      ...existing,
+      ...updates,
+      updated_at: new Date().toISOString()
+    };
+
+    if (updates.phone !== undefined) {
+      const crm = await getCrm();
+      updated.phone = String(updates.phone).trim();
+      updated.phone_norm = crm.normalizePhone(updated.phone);
+    }
+
+    return putRecord(db, 'customers', updated);
+  },
+
+  async deleteCustomer(id) {
+    const db = await openDB();
+    return deleteRecord(db, 'customers', id);
+  },
+
   async exportAll() {
     const db = await openDB();
-    const [designs, bookings, orders, expenses, subscribers] = await Promise.all([
+    const [designs, bookings, orders, expenses, subscribers, customers] = await Promise.all([
       getAllRecords(db, 'designs'),
       getAllRecords(db, 'bookings'),
       getAllRecords(db, 'orders'),
       getAllRecords(db, 'expenses'),
-      getAllRecords(db, 'subscribers')
+      getAllRecords(db, 'subscribers'),
+      getAllRecords(db, 'customers')
     ]);
 
     return {
-      version: 1,
+      version: 2,
       appName: 'Apparel by Ezekiel',
       exportedAt: new Date().toISOString(),
       data: {
@@ -497,7 +812,8 @@ export const indexedDBAdapter = {
         bookings,
         orders,
         expenses,
-        subscribers
+        subscribers,
+        customers
       }
     };
   },
@@ -507,7 +823,8 @@ export const indexedDBAdapter = {
       throw new Error('Invalid backup file format');
     }
     const db = await openDB();
-    const { designs, bookings, orders, expenses, subscribers } = imported.data;
+    const crm = await getCrm();
+    const { designs, bookings, orders, expenses, subscribers, customers } = imported.data;
 
     if (db) {
       const tx = db.transaction(STORES, 'readwrite');
@@ -516,11 +833,16 @@ export const indexedDBAdapter = {
       if (Array.isArray(orders)) for (const o of orders) tx.objectStore('orders').put(o);
       if (Array.isArray(expenses)) for (const e of expenses) tx.objectStore('expenses').put(e);
       if (Array.isArray(subscribers)) for (const s of subscribers) tx.objectStore('subscribers').put(s);
+      if (Array.isArray(customers)) for (const c of customers) tx.objectStore('customers').put(c);
 
-      return new Promise((res, rej) => {
+      await new Promise((res, rej) => {
         tx.oncomplete = () => res(true);
         tx.onerror = () => rej(tx.error);
       });
+
+      // Run rebuildCustomersFromOrders after import and insert new records
+      await syncRebuiltCustomers(db);
+      return true;
     } else {
       initMemoryFallback();
       if (Array.isArray(designs)) memoryStores.designs = designs;
@@ -528,6 +850,18 @@ export const indexedDBAdapter = {
       if (Array.isArray(orders)) memoryStores.orders = orders;
       if (Array.isArray(expenses)) memoryStores.expenses = expenses;
       if (Array.isArray(subscribers)) memoryStores.subscribers = subscribers;
+      if (Array.isArray(customers)) {
+        memoryStores.customers = [...customers];
+      }
+
+      // Rebuild from imported orders/bookings
+      const currentCusts = memoryStores.customers || [];
+      const newFromOrders = crm.rebuildCustomersFromOrders(
+        currentCusts,
+        memoryStores.orders || [],
+        memoryStores.bookings || []
+      );
+      memoryStores.customers = [...currentCusts, ...newFromOrders];
       persistMemoryFallback();
       return true;
     }
@@ -535,6 +869,9 @@ export const indexedDBAdapter = {
 
   async resetToDemo() {
     const db = await openDB();
+    const crm = await getCrm();
+    const demoCustomers = buildSeededDemoCustomers(crm);
+
     if (db) {
       const tx = db.transaction(STORES, 'readwrite');
       for (const name of STORES) tx.objectStore(name).clear();
@@ -543,6 +880,7 @@ export const indexedDBAdapter = {
       for (const o of DEMO_ORDERS) tx.objectStore('orders').put(o);
       for (const exp of DEMO_EXPENSES) tx.objectStore('expenses').put(exp);
       for (const s of DEMO_SUBSCRIBERS) tx.objectStore('subscribers').put(s);
+      for (const c of demoCustomers) tx.objectStore('customers').put(c);
 
       return new Promise((res) => {
         tx.oncomplete = () => res(true);
@@ -554,7 +892,8 @@ export const indexedDBAdapter = {
         bookings: [...DEMO_BOOKINGS],
         orders: [...DEMO_ORDERS],
         expenses: [...DEMO_EXPENSES],
-        subscribers: [...DEMO_SUBSCRIBERS]
+        subscribers: [...DEMO_SUBSCRIBERS],
+        customers: demoCustomers
       };
       persistMemoryFallback();
       return true;
