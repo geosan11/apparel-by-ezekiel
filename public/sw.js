@@ -1,6 +1,7 @@
 const CACHE_VERSION = 'v1.0.0';
 const SHELL_CACHE = `apparel-shell-${CACHE_VERSION}`;
 const IMAGE_CACHE = `apparel-images-${CACHE_VERSION}`;
+const ML_CACHE = 'apparel-ml-movenet-lightning-4';
 const MAX_IMAGE_ENTRIES = 50;
 
 const PRECACHE_SHELL = [
@@ -29,7 +30,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== SHELL_CACHE && key !== IMAGE_CACHE) {
+          if (key !== SHELL_CACHE && key !== IMAGE_CACHE && !key.startsWith('apparel-ml-')) {
             return caches.delete(key);
           }
         })
@@ -63,7 +64,28 @@ self.addEventListener('fetch', (event) => {
     return; // Pass through to network directly
   }
 
-  // 2. Images: Cache-first with entry cap
+  // 2. ML Model: MoveNet SinglePose Lightning v4 (cache-first, put on first fetch, long-lived)
+  if (url.pathname.startsWith('/vendor/movenet/')) {
+    event.respondWith(
+      caches.open(ML_CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+        if (cached) return cached;
+
+        try {
+          const networkResponse = await fetch(request);
+          if (networkResponse && networkResponse.status === 200) {
+            cache.put(request, networkResponse.clone());
+          }
+          return networkResponse;
+        } catch (err) {
+          return cached || new Response('', { status: 408, statusText: 'Offline' });
+        }
+      })
+    );
+    return;
+  }
+
+  // 3. Images: Cache-first with entry cap
   if (
     request.destination === 'image' ||
     /\.(svg|png|jpg|jpeg|webp|gif|ico)$/i.test(url.pathname)

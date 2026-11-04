@@ -908,6 +908,12 @@ button, a.btn, input[type="button"], input[type="submit"] {
   }
 }
 
+.tryon-canvas-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .tryon-canvas-container {
   position: relative;
   width: 100%;
@@ -925,13 +931,107 @@ button, a.btn, input[type="button"], input[type="submit"] {
 .tryon-canvas {
   width: 100%;
   height: 100%;
+  object-fit: contain;
   display: block;
+}
+
+.tryon-status-bar {
+  min-height: 22px;
+  font-size: 0.8rem;
+  color: var(--color-gold);
+  text-align: center;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.tryon-privacy-note {
+  font-size: 0.74rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin-top: 2px;
 }
 
 .tryon-controls-panel {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
+}
+
+.tryon-garment-pills {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  white-space: nowrap;
+}
+
+.tryon-order-action {
+  margin-top: 2px;
+}
+
+.tryon-adjust-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: border-color var(--duration-fast), color var(--duration-fast);
+}
+
+.tryon-adjust-toggle:hover {
+  border-color: var(--color-gold);
+  color: var(--color-text-primary);
+}
+
+/* Mobile Layout for Try-On Modal (≤ 799px) */
+@media (max-width: 799px) {
+  #modalTryOn .modal-content {
+    padding-bottom: 0;
+  }
+
+  .tryon-workspace {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .tryon-canvas-container {
+    max-height: 55vh;
+    width: auto;
+    aspect-ratio: 3 / 4;
+    margin: 0 auto;
+  }
+
+  .tryon-controls-panel {
+    display: contents;
+  }
+
+  .tryon-order-action {
+    position: sticky;
+    bottom: 0;
+    background-color: var(--color-bg-card);
+    padding: 10px 0;
+    margin-top: 4px;
+    z-index: 10;
+    border-top: 1px solid var(--color-border-subtle);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tryon-adjust-toggle,
+  .tryon-canvas-container,
+  .tryon-status-bar {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 /* Toast / Feedback Notice */

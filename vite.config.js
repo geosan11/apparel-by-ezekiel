@@ -21,6 +21,9 @@ export default defineConfig({
           if (id.includes('node_modules/@supabase')) {
             return 'supabase-vendor';
           }
+          if (id.includes('node_modules/@tensorflow')) {
+            return 'tfjs-vendor';
+          }
         }
       }
     }
