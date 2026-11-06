@@ -1,6 +1,8 @@
 import '../styles/main.css';
 import { store } from '../store/index.js';
 import { open3DViewer, close3DViewer } from './viewer3d.js';
+import { escapeHtml } from '../utils/escapeHtml.js';
+import { getWhatsAppPhone, buildBookingMessage, buildWhatsAppUrl } from '../utils/whatsapp.js';
 
 // State
 let allDesigns = [];
@@ -17,6 +19,11 @@ const RECENT_KEY = 'apparel_recent_v1';
 document.addEventListener('DOMContentLoaded', async () => {
   await store.init();
   allDesigns = await store.getDesigns();
+
+  const conciergeWaLink = document.getElementById('conciergeWaLink');
+  if (conciergeWaLink) {
+    conciergeWaLink.href = buildWhatsAppUrl('', getWhatsAppPhone());
+  }
 
   initNavigation();
   initGallery();
@@ -93,7 +100,7 @@ function initGallery() {
       const isWide = d.featured && index === 0;
 
       return `
-        <article class="design-card reveal-on-scroll ${isWide ? 'featured-wide' : ''}" data-id="${d.id}" data-slug="${d.slug}">
+        <article class="design-card reveal-on-scroll ${isWide ? 'featured-wide' : ''}" data-id="${escapeHtml(d.id)}" data-slug="${escapeHtml(d.slug)}">
           <div class="card-media">
             <div class="card-badges">
               ${d.isNewThisWeek ? '<span class="badge badge-new">New Drop</span>' : ''}
@@ -101,34 +108,34 @@ function initGallery() {
             </div>
 
             <button class="card-wishlist-btn ${isSaved ? 'saved' : ''}" 
-              data-wishlist-id="${d.id}" 
+              data-wishlist-id="${escapeHtml(d.id)}" 
               aria-label="${isSaved ? 'Remove from wishlist' : 'Save to wishlist'}">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="${isSaved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
               </svg>
             </button>
 
-            <img src="${d.image}" alt="${d.title} by Ezekiel" class="card-image" loading="lazy" width="800" height="1000"/>
+            <img src="${escapeHtml(d.image)}" alt="${escapeHtml(d.title)} by Ezekiel" class="card-image" loading="lazy" width="800" height="1000"/>
 
             <div class="card-overlay-actions">
-              <button class="card-action-btn view-3d-btn" data-slug="${d.slug}">3D Preview <span class="badge badge-beta">Beta</span></button>
-              <button class="card-action-btn view-tryon-btn" data-slug="${d.slug}">Try-On <span class="badge badge-beta">Beta</span></button>
-              <button class="card-action-btn book-btn" data-slug="${d.slug}">Book</button>
+              <button class="card-action-btn view-3d-btn" data-slug="${escapeHtml(d.slug)}">3D Preview <span class="badge badge-beta">Beta</span></button>
+              <button class="card-action-btn view-tryon-btn" data-slug="${escapeHtml(d.slug)}">Try-On <span class="badge badge-beta">Beta</span></button>
+              <button class="card-action-btn book-btn" data-slug="${escapeHtml(d.slug)}">Book</button>
             </div>
           </div>
 
           <div class="card-body">
             <div class="card-header-row">
-              <span class="label-caps">${d.category}</span>
-              <span class="card-price">${d.priceFormatted}</span>
+              <span class="label-caps">${escapeHtml(d.category)}</span>
+              <span class="card-price">${escapeHtml(d.priceFormatted)}</span>
             </div>
             <h3 class="card-title">
-              <a href="/designs/${d.slug}/" class="design-detail-link" data-slug="${d.slug}">${d.title}</a>
+              <a href="/designs/${escapeHtml(d.slug)}/" class="design-detail-link" data-slug="${escapeHtml(d.slug)}">${escapeHtml(d.title)}</a>
             </h3>
-            <p class="card-tagline">${d.tagline}</p>
+            <p class="card-tagline">${escapeHtml(d.tagline)}</p>
             <div class="card-footer-row">
-              <span class="label-caps" style="color: var(--color-text-muted);">Lead: ${d.leadTime}</span>
-              <a href="/designs/${d.slug}/" class="btn btn-outline btn-sm design-detail-link" data-slug="${d.slug}">View Piece</a>
+              <span class="label-caps" style="color: var(--color-text-muted);">Lead: ${escapeHtml(d.leadTime)}</span>
+              <a href="/designs/${escapeHtml(d.slug)}/" class="btn btn-outline btn-sm design-detail-link" data-slug="${escapeHtml(d.slug)}">View Piece</a>
             </div>
           </div>
         </article>
@@ -408,8 +415,8 @@ async function openTryOnModal(initialDesign = null) {
   if (pillList) {
     pillList.innerHTML = allDesigns.map((d) => `
       <button class="btn btn-sm btn-outline tryon-select-pill ${currentTryOnDesign && currentTryOnDesign.id === d.id ? 'active' : ''}" 
-        data-overlay="${d.overlayImage}" data-id="${d.id}">
-        ${d.title}
+        data-overlay="${escapeHtml(d.overlayImage)}" data-id="${escapeHtml(d.id)}">
+        ${escapeHtml(d.title)}
       </button>
     `).join('');
 
@@ -536,27 +543,27 @@ function openDetailModal(design) {
     content.innerHTML = `
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-4);">
         <div>
-          <img src="${design.image}" alt="${design.title}" style="width: 100%; border: 1px solid var(--color-border); background: #141312; border-radius: 2px;" width="800" height="1000"/>
+          <img src="${escapeHtml(design.image)}" alt="${escapeHtml(design.title)}" style="width: 100%; border: 1px solid var(--color-border); background: #141312; border-radius: 2px;" width="800" height="1000"/>
         </div>
         <div style="display: flex; flex-direction: column; gap: var(--space-2);">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span class="label-caps">${design.category}</span>
+            <span class="label-caps">${escapeHtml(design.category)}</span>
             <span class="badge ${design.isNewThisWeek ? 'badge-new' : 'badge-beta'}">${design.isNewThisWeek ? 'New Drop' : 'Signature'}</span>
           </div>
-          <h2>${design.title}</h2>
-          <div style="font-size: 1.4rem; color: var(--color-gold-light); font-weight: 600;">${design.priceFormatted}</div>
-          <p style="margin-top: 8px;">${design.description}</p>
+          <h2>${escapeHtml(design.title)}</h2>
+          <div style="font-size: 1.4rem; color: var(--color-gold-light); font-weight: 600;">${escapeHtml(design.priceFormatted)}</div>
+          <p style="margin-top: 8px;">${escapeHtml(design.description)}</p>
           
           <div style="background: var(--color-bg-elevated); padding: 12px 16px; border-radius: 2px; border: 1px solid var(--color-border-subtle); margin: 8px 0;">
-            <div style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Fabric:</strong> ${design.fabric}</div>
-            <div style="font-size: 0.85rem;"><strong>Lead Time:</strong> ${design.leadTime}</div>
+            <div style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Fabric:</strong> ${escapeHtml(design.fabric)}</div>
+            <div style="font-size: 0.85rem;"><strong>Lead Time:</strong> ${escapeHtml(design.leadTime)}</div>
           </div>
 
           <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
             <button class="btn btn-primary" id="detailBookBtn">Book Bespoke Fitting</button>
             <button class="btn btn-outline" id="detail3dBtn">3D Preview (Beta)</button>
             <button class="btn btn-outline" id="detailTryonBtn">Try-On (Beta)</button>
-            <a href="${waShareUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="border-color: #25D366; color: #F6F3EE;">
+            <a href="${escapeHtml(waShareUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="border-color: #25D366; color: #F6F3EE;">
               Share on WhatsApp
             </a>
           </div>
@@ -592,7 +599,7 @@ function initBookingForm() {
   if (designSelect) {
     designSelect.innerHTML = `
       <option value="">-- Select Design (Optional) --</option>
-      ${allDesigns.map((d) => `<option value="${d.id}">${d.title} (${d.priceFormatted})</option>`).join('')}
+      ${allDesigns.map((d) => `<option value="${escapeHtml(d.id)}">${escapeHtml(d.title)} (${escapeHtml(d.priceFormatted)})</option>`).join('')}
     `;
   }
 
@@ -628,11 +635,20 @@ function initBookingForm() {
       simulatedBookingRecord = saved;
 
       // Update prefilled WhatsApp link
-      const waMessage = `Hello Ezekiel, I booked a bespoke fitting:\nName: ${name}\nPhone: ${phone}\nDate: ${date}\nDesign: ${selectedDesign ? selectedDesign.title : 'Consultation'}\nRef: ${saved.id}`;
-      const waUrl = `https://wa.me/2348000000000?text=${encodeURIComponent(waMessage)}`;
+      const waMessage = buildBookingMessage({
+        name,
+        phone,
+        date,
+        designTitle: selectedDesign ? selectedDesign.title : 'Bespoke Consultation',
+        ref: saved.id,
+        notes
+      });
+      const waUrl = buildWhatsAppUrl(waMessage);
       const confirmWaBtn = document.getElementById('bookingConfirmWaBtn');
       if (confirmWaBtn) {
         confirmWaBtn.href = waUrl;
+        confirmWaBtn.target = '_blank';
+        confirmWaBtn.rel = 'noopener';
       }
 
       // Show Payment / Confirmation screen
@@ -653,31 +669,9 @@ function initBookingForm() {
   // Complete simulated payment
   const completeOpayBtn = document.getElementById('completeOpaySimBtn');
   if (completeOpayBtn) {
-    completeOpayBtn.addEventListener('click', async () => {
-      completeOpayBtn.textContent = 'Processing Demo Payment...';
-      completeOpayBtn.disabled = true;
-
-      setTimeout(async () => {
-        const ref = `OPAY-SIM-${Math.floor(100000 + Math.random() * 900000)}`;
-        if (simulatedBookingRecord) {
-          await store.updateBooking(simulatedBookingRecord.id, {
-            deposit_status: 'paid',
-            deposit_reference: ref,
-            status: 'confirmed'
-          });
-        }
-
-        closeModal('opayModal');
-        completeOpayBtn.textContent = 'Complete Simulated Deposit (₦50,000)';
-        completeOpayBtn.disabled = false;
-
-        document.getElementById('depositStatusBadge').textContent = 'DEPOSIT PAID (SIMULATED)';
-        document.getElementById('depositStatusBadge').className = 'badge badge-beta';
-        document.getElementById('depositStatusBadge').style.backgroundColor = '#4E9A51';
-        document.getElementById('simulateOpayBtn').style.display = 'none';
-
-        showToast('Demo payment simulation successful! Status updated to Paid.');
-      }, 900);
+    completeOpayBtn.addEventListener('click', () => {
+      closeModal('opayModal');
+      showToast('Demo, no payment taken. Ezekiel will confirm your deposit on WhatsApp.');
     });
   }
 }
@@ -748,15 +742,15 @@ function openWishlistModal() {
           ${savedDesigns.map((d) => `
             <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-border-subtle); padding-bottom: 12px;">
               <div style="display: flex; align-items: center; gap: 16px;">
-                <img src="${d.image}" alt="${d.title}" style="width: 54px; height: 68px; object-fit: cover; border-radius: 2px;" />
+                <img src="${escapeHtml(d.image)}" alt="${escapeHtml(d.title)}" style="width: 54px; height: 68px; object-fit: cover; border-radius: 2px;" />
                 <div>
-                  <h4 style="font-size: 1.05rem;">${d.title}</h4>
-                  <div style="color: var(--color-gold); font-size: 0.9rem;">${d.priceFormatted}</div>
+                  <h4 style="font-size: 1.05rem;">${escapeHtml(d.title)}</h4>
+                  <div style="color: var(--color-gold); font-size: 0.9rem;">${escapeHtml(d.priceFormatted)}</div>
                 </div>
               </div>
               <div style="display: flex; gap: 8px;">
-                <button class="btn btn-outline btn-sm" onclick="window.bookFromWishlist('${d.id}')">Book</button>
-                <button class="btn btn-outline btn-sm" style="border-color: transparent;" onclick="window.removeWishlist('${d.id}')">✕</button>
+                <button class="btn btn-outline btn-sm" onclick="window.bookFromWishlist('${escapeHtml(d.id)}')">Book</button>
+                <button class="btn btn-outline btn-sm" style="border-color: transparent;" onclick="window.removeWishlist('${escapeHtml(d.id)}')">✕</button>
               </div>
             </div>
           `).join('')}
@@ -810,9 +804,9 @@ function renderRecentlyViewed() {
 
     section.style.display = 'block';
     container.innerHTML = recentDesigns.map((d) => `
-      <div class="drop-pill" style="cursor: pointer;" onclick="window.openDesignDetail('${d.slug}')">
-        <span>${d.title}</span>
-        <span style="color: var(--color-gold);">${d.priceFormatted}</span>
+      <div class="drop-pill" style="cursor: pointer;" onclick="window.openDesignDetail('${escapeHtml(d.slug)}')">
+        <span>${escapeHtml(d.title)}</span>
+        <span style="color: var(--color-gold);">${escapeHtml(d.priceFormatted)}</span>
       </div>
     `).join('');
   } catch (e) {}

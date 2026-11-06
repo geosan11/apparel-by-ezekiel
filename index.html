@@ -191,7 +191,7 @@
         <div>
           <h4 class="label-caps" style="margin-bottom: 12px;">Contact & Access</h4>
           <p style="font-size: 0.9rem; margin-bottom: 8px;">
-            Direct Concierge: <a href="https://wa.me/2348000000000" class="text-gold" target="_blank" rel="noopener">+234 (0) 800 EZEKIEL</a>
+            Direct Concierge: <a href="https://wa.me/2347065086445" id="conciergeWaLink" class="text-gold" target="_blank" rel="noopener">+234 706 508 6445</a>
           </p>
           <p style="font-size: 0.9rem; margin-bottom: 12px;">
             Atelier: Plot 12B, Victoria Island, Lagos
@@ -386,20 +386,17 @@
           </p>
 
           <div style="background: var(--color-bg-elevated); padding: 16px; border-radius: 2px; margin-bottom: 20px; border: 1px solid var(--color-border-subtle); text-align: left;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <div style="display: flex; justify-content: space-between;">
               <span>Fitting Commitment Deposit:</span>
               <strong>₦50,000</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span>Deposit Status:</span>
-              <span class="badge" id="depositStatusBadge" style="background: rgba(217, 83, 79, 0.15); color: #D9534F;">PENDING</span>
             </div>
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 10px;">
             <button class="btn btn-primary" id="simulateOpayBtn">
-              Pay ₦50,000 Deposit via OPay (Simulated)
+              Preview OPay deposit (demo)
             </button>
+            <div id="opayDemoNote" style="font-size: 0.82rem; color: var(--color-text-secondary); text-align: center;">Demo, no payment taken. Ezekiel will confirm your deposit on WhatsApp.</div>
             <a href="#" id="bookingConfirmWaBtn" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="border-color: #25D366; color: #25D366;">
               Confirm on WhatsApp with Ezekiel
             </a>
@@ -433,11 +430,11 @@
         </div>
 
         <div style="font-size: 0.82rem; color: var(--color-text-secondary); line-height: 1.5; margin-bottom: 20px;">
-          This simulates the instant Nigerian instant payment flow (Bank Transfer / USSD / Card) for booking deposits. Clicking below marks the deposit as paid in the database without debiting any account.
+          This is a demonstration of the Nigerian payment flow (Bank Transfer / USSD / Card) for booking deposits. This is a demo only and no money is taken.
         </div>
 
         <button class="btn btn-primary" id="completeOpaySimBtn" style="width: 100%; background-color: #00B875; border-color: #00B875; color: #FFFFFF;">
-          Complete Simulated Deposit (₦50,000)
+          Close demo (no payment taken)
         </button>
       </div>
     </div>

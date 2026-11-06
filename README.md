@@ -100,7 +100,7 @@ cp .env.example .env
 | :--- | :--- | :--- |
 | `VITE_SUPABASE_URL` | Your Supabase project URL (`https://<project>.supabase.co`) | Empty (uses local IndexedDB) |
 | `VITE_SUPABASE_ANON_KEY` | Your Supabase anon public API key | Empty (uses local IndexedDB) |
-| `VITE_WHATSAPP_PHONE` | Atelier WhatsApp concierge phone number | `2348000000000` |
+| `VITE_WHATSAPP_PHONE` | Atelier WhatsApp concierge phone number | `2347065086445` |
 
 ---
 

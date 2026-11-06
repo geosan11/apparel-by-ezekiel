@@ -422,7 +422,7 @@ function showConfirmChip(parsed) {
   const chip = document.getElementById('expenseConfirmChip');
   const text = document.getElementById('confirmChipText');
   if (chip && text) {
-    text.innerHTML = `Confirm: <strong>${parsed.formattedAmount}</strong> • <span class="label-caps">${parsed.category}</span> • ${parsed.date} (${parsed.description})`;
+    text.innerHTML = `Confirm: <strong>${escapeHtml(parsed.formattedAmount)}</strong> • <span class="label-caps">${escapeHtml(parsed.category)}</span> • ${escapeHtml(parsed.date)} (${escapeHtml(parsed.description)})`;
     chip.style.display = 'flex';
   }
 }
@@ -442,7 +442,7 @@ function showUndoToast(msg, expenseId) {
   }
 
   toast.innerHTML = `
-    <span>${msg}</span>
+    <span>${escapeHtml(msg)}</span>
     <button id="toastUndoBtn" class="btn btn-outline btn-sm" style="padding: 4px 10px; margin-left: 8px; border-color: var(--color-gold);">Undo</button>
   `;
   toast.classList.add('show');
@@ -598,15 +598,15 @@ function renderExpenses() {
   container.innerHTML = cachedExpenses.map((exp) => `
     <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--color-border-subtle); background: var(--color-bg-card);">
       <div style="display: flex; align-items: center; gap: 14px;">
-        <span class="badge" style="background: rgba(184, 155, 106, 0.15);">${exp.category}</span>
+        <span class="badge" style="background: rgba(184, 155, 106, 0.15);">${escapeHtml(exp.category)}</span>
         <div>
-          <div style="font-weight: 500;">${exp.description || exp.category}</div>
-          <div style="font-size: 0.78rem; color: var(--color-text-secondary);">${exp.date} ${exp.raw_input ? `• "${exp.raw_input}"` : ''}</div>
+          <div style="font-weight: 500;">${escapeHtml(exp.description || exp.category)}</div>
+          <div style="font-size: 0.78rem; color: var(--color-text-secondary);">${escapeHtml(exp.date)} ${exp.raw_input ? `• "${escapeHtml(exp.raw_input)}"` : ''}</div>
         </div>
       </div>
       <div style="display: flex; align-items: center; gap: 16px;">
         <div style="font-weight: 700; color: #F6F3EE; font-size: 1rem;">${formatNaira(exp.amount)}</div>
-        <button class="btn btn-outline btn-sm delete-expense-btn" data-exp-id="${exp.id}" style="padding: 4px 8px; border-color: transparent; color: #D9534F;">✕</button>
+        <button class="btn btn-outline btn-sm delete-expense-btn" data-exp-id="${escapeHtml(exp.id)}" style="padding: 4px 8px; border-color: transparent; color: #D9534F;">✕</button>
       </div>
     </div>
   `).join('');
@@ -633,16 +633,16 @@ function renderBookingsLeads() {
   container.innerHTML = cachedBookings.map((b) => `
     <div style="padding: 12px; border-bottom: 1px solid var(--color-border-subtle); display: flex; justify-content: space-between; align-items: center;">
       <div>
-        <div style="font-weight: 600;">${b.customer_name} <span style="font-size: 0.8rem; font-weight: normal; color: var(--color-text-secondary);">(${b.phone})</span></div>
-        <div style="font-size: 0.82rem; color: var(--color-gold);">${b.design_title} • Fitting: ${b.fitting_date}</div>
-        ${b.notes ? `<div style="font-size: 0.78rem; color: var(--color-text-muted);">Note: ${b.notes}</div>` : ''}
+        <div style="font-weight: 600;">${escapeHtml(b.customer_name)} <span style="font-size: 0.8rem; font-weight: normal; color: var(--color-text-secondary);">(${escapeHtml(b.phone)})</span></div>
+        <div style="font-size: 0.82rem; color: var(--color-gold);">${escapeHtml(b.design_title)} • Fitting: ${escapeHtml(b.fitting_date)}</div>
+        ${b.notes ? `<div style="font-size: 0.78rem; color: var(--color-text-muted);">Note: ${escapeHtml(b.notes)}</div>` : ''}
       </div>
       <div style="text-align: right;">
         <span class="badge ${b.deposit_status === 'paid' ? 'badge-beta' : ''}" style="${b.deposit_status === 'paid' ? 'background: #4E9A51; color: #fff;' : 'background: #333;'}">
           ${b.deposit_status === 'paid' ? 'Deposit Paid' : 'Deposit Pending'}
         </span>
         <div style="margin-top: 6px;">
-          <button class="btn btn-outline btn-sm convert-to-order-btn" data-booking-id="${b.id}" style="font-size: 0.7rem; padding: 2px 8px;">
+          <button class="btn btn-outline btn-sm convert-to-order-btn" data-booking-id="${escapeHtml(b.id)}" style="font-size: 0.7rem; padding: 2px 8px;">
             Convert to Order
           </button>
         </div>

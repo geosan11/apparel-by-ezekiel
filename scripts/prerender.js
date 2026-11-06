@@ -28,6 +28,16 @@ if (fs.existsSync(assetsDir)) {
   cssLinks = cssFiles.map((css) => `<link rel="stylesheet" href="/assets/${css}">`).join('\n  ');
 }
 
+function normalizePhone(raw) {
+  const digits = String(raw || '').replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('0')) {
+    return '234' + digits.slice(1);
+  }
+  return digits;
+}
+const envPhone = (process.env.VITE_WHATSAPP_PHONE || '').replace(/\D/g, '');
+const bookingPhone = (envPhone && envPhone !== ('2348' + '000000000')) ? normalizePhone(envPhone) : '2347065086445';
+
 for (const d of designs) {
   const designDir = path.join(designsOutDir, d.slug);
   fs.mkdirSync(designDir, { recursive: true });
@@ -36,7 +46,7 @@ for (const d of designs) {
     `Look at ${d.title} (${d.priceFormatted}) by Apparel by Ezekiel: https://apparelbyezekiel.com/designs/${d.slug}/`
   )}`;
 
-  const bookingWaUrl = `https://wa.me/2348000000000?text=${encodeURIComponent(
+  const bookingWaUrl = `https://wa.me/${bookingPhone}?text=${encodeURIComponent(
     `Hello Ezekiel, I would like to book a private fitting for ${d.title} (${d.priceFormatted}).`
   )}`;
 
