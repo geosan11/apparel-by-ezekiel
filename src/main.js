@@ -6,6 +6,7 @@ import {
   escapeHtml,
   isSizeSelected,
   getProductImages,
+  normalizeProduct,
   MEASUREMENT_CONFIG,
   convertMeasurement,
   validateMeasurement,
@@ -13,6 +14,8 @@ import {
   buildMeasurementsMessage,
   buildWhatsAppMeasurementsUrl
 } from './utils.js';
+import { fetchStorefrontProducts } from './supabase.js';
+import { initAdmin } from './admin.js';
 
 export { getProductImages };
 
@@ -67,7 +70,7 @@ function persistSavedMeasurements(data) {
 
 // App State
 const state = {
-  products: productsData,
+  products: productsData.map(normalizeProduct),
   currentCategory: 'All',
   searchQuery: '',
   isMenuOpen: false,
@@ -102,6 +105,19 @@ const state = {
     errors: {}
   }
 };
+
+// Asynchronously fetch live products from Supabase (with automatic fallback to bundled JSON)
+if (typeof window !== 'undefined') {
+  fetchStorefrontProducts().then((fetched) => {
+    if (fetched && fetched.length > 0) {
+      state.products = fetched;
+      const hash = window.location.hash || '';
+      if (!hash.startsWith('#/admin') && !hash.startsWith('#admin')) {
+        render();
+      }
+    }
+  });
+}
 
 function saveWishlist() {
   if (typeof localStorage === 'undefined') return;
@@ -170,6 +186,9 @@ function renderDrawer() {
               ${ICONS.whatsapp}
               <span>Chat on WhatsApp</span>
             </a>
+          </div>
+          <div class="drawer-admin-row">
+            <a href="#/admin" class="drawer-admin-link">Owner Login</a>
           </div>
         </div>
       </div>
@@ -307,6 +326,14 @@ function renderHome() {
         `
         }
       </section>
+
+      <!-- Storefront Footer with Owner Login -->
+      <footer class="store-footer">
+        <div class="store-footer-inner">
+          <p class="store-footer-copy">© 2026 Apparel by Ezekiel. Handcrafted luxury in Lagos, Nigeria.</p>
+          <a href="#/admin" class="store-footer-admin-link">Owner Login</a>
+        </div>
+      </footer>
     </main>
 
     <!-- Bottom Navigation: just Home and Shop -->
@@ -1854,6 +1881,12 @@ function render() {
 
   const hash = window.location.hash || '';
 
+  // Route: Admin Portal (#/admin or #admin)
+  if (hash.startsWith('#/admin') || hash.startsWith('#admin')) {
+    initAdmin(app);
+    return;
+  }
+
   // Route: #/measure/<productId>?size=<size>
   if (hash.startsWith('#measure/')) {
     const raw = hash.replace('#measure/', '').trim();
@@ -1861,7 +1894,7 @@ function render() {
     const params = new URLSearchParams(queryString || '');
     const size = params.get('size') || 'Custom';
 
-    const product = state.products.find((p) => p.id === productId);
+    const product = state.products.find((p) => p.id === productId || p.slug === productId);
     if (!product) {
       app.innerHTML = renderNotFound();
       const notFoundBackBtn = document.querySelector('#not-found-back-btn');
@@ -1890,7 +1923,7 @@ function render() {
 
   if (hash.startsWith('#product/')) {
     const productId = hash.replace('#product/', '').trim();
-    const product = state.products.find((p) => p.id === productId);
+    const product = state.products.find((p) => p.id === productId || p.slug === productId);
 
     if (!product) {
       app.innerHTML = renderNotFound();

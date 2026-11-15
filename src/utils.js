@@ -414,3 +414,132 @@ export function buildWhatsAppMeasurementsUrl(phone = '2347065086445', payload = 
   const message = buildMeasurementsMessage(payload);
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
 }
+
+/**
+ * Parse price input into integer Naira value.
+ * Handles inputs with currency symbol (₦), commas, spaces, or decimals.
+ * @param {string|number|null|undefined} input
+ * @returns {number} Non-negative integer
+ */
+export function parsePrice(input) {
+  if (input == null) return 0;
+  if (typeof input === 'number') {
+    if (isNaN(input) || input < 0) return 0;
+    return Math.round(input);
+  }
+  const cleanStr = String(input)
+    .replace(/[₦,$\s]/g, '')
+    .trim();
+  const num = parseFloat(cleanStr);
+  if (isNaN(num) || num < 0) return 0;
+  return Math.round(num);
+}
+
+/**
+ * Generate a URL-friendly slug from product name.
+ * e.g. "Kaftan 010 – Royal Sand" -> "kaftan-010-royal-sand"
+ * @param {string} name
+ * @returns {string}
+ */
+export function generateSlug(name) {
+  if (!name || typeof name !== 'string') return 'garment';
+  const slug = name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remove diacritics
+    .replace(/[^a-z0-9]+/g, '-') // replace non-alphanumeric with hyphen
+    .replace(/^-+|-+$/g, ''); // trim leading and trailing hyphens
+
+  return slug || 'garment';
+}
+
+/**
+ * Calculate scaled dimensions for client-side image resizing,
+ * ensuring neither width nor height exceeds maxDimension while preserving aspect ratio.
+ * @param {number} width
+ * @param {number} height
+ * @param {number} maxDimension
+ * @returns {{ width: number, height: number }}
+ */
+export function calculateResizeDimensions(width, height, maxDimension = 1600) {
+  const w = Math.round(Number(width) || 0);
+  const h = Math.round(Number(height) || 0);
+  const max = Math.round(Number(maxDimension) || 1600);
+
+  if (w <= 0 || h <= 0) {
+    return { width: 0, height: 0 };
+  }
+
+  if (w <= max && h <= max) {
+    return { width: w, height: h };
+  }
+
+  if (w >= h) {
+    const scale = max / w;
+    return {
+      width: max,
+      height: Math.max(1, Math.round(h * scale))
+    };
+  } else {
+    const scale = max / h;
+    return {
+      width: Math.max(1, Math.round(w * scale)),
+      height: max
+    };
+  }
+}
+
+/**
+ * Normalize product object from Supabase or JSON fallback to uniform structure
+ * @param {object} p
+ * @returns {object|null}
+ */
+export function normalizeProduct(p) {
+  if (!p || typeof p !== 'object') return null;
+
+  const slug = (p.slug || p.id || '').trim();
+  const id = (p.id || slug || '').trim();
+  const rawImages = Array.isArray(p.images) && p.images.length > 0
+    ? p.images
+    : (p.image ? [p.image] : []);
+  const images = rawImages.filter((img) => typeof img === 'string' && img.trim().length > 0);
+
+  const rawSizes = Array.isArray(p.sizes) && p.sizes.length > 0
+    ? p.sizes
+    : ['S', 'M', 'L', 'XL', 'XXL', 'Custom'];
+  const sizes = rawSizes.filter((s) => typeof s === 'string' && s.trim().length > 0);
+
+  return {
+    id: id || slug || 'product',
+    slug: slug || id || 'product',
+    name: (p.name || 'Untitled Garment').trim(),
+    category: (p.category || 'Kaftans').trim(),
+    price: parsePrice(p.price),
+    description: (p.description || '').trim(),
+    details: (p.details || '').trim(),
+    sizes,
+    images,
+    image: images[0] || '',
+    is_published: p.is_published !== false,
+    sort_order: typeof p.sort_order === 'number' && !isNaN(p.sort_order) ? p.sort_order : 0,
+    created_at: p.created_at || null,
+    updated_at: p.updated_at || null
+  };
+}
+
+/**
+ * Determine products to display with robust fallback to bundled products
+ * @param {Array|null|undefined} apiProducts
+ * @param {Array} fallbackProducts
+ * @returns {Array}
+ */
+export function loadProductsFallback(apiProducts, fallbackProducts = []) {
+  if (Array.isArray(apiProducts) && apiProducts.length > 0) {
+    return apiProducts.map(normalizeProduct).filter(Boolean);
+  }
+  if (Array.isArray(fallbackProducts) && fallbackProducts.length > 0) {
+    return fallbackProducts.map(normalizeProduct).filter(Boolean);
+  }
+  return [];
+}
+
