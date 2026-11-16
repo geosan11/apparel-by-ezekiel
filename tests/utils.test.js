@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { formatPrice, buildWhatsAppUrl, filterProducts, escapeHtml } from '../src/utils.js';
+import {
+  formatPrice,
+  buildWhatsAppUrl,
+  filterProducts,
+  escapeHtml,
+  isSizeSelected
+} from '../src/utils.js';
 
 describe('formatPrice', () => {
   it('formats whole numbers to Nigerian Naira format', () => {
@@ -40,6 +46,37 @@ describe('buildWhatsAppUrl', () => {
       price: 95000
     });
     expect(url.startsWith('https://wa.me/2347065086445')).toBe(true);
+  });
+
+  it('includes the page link when provided in details', () => {
+    const url = buildWhatsAppUrl('2347065086445', {
+      product: 'Monarch Grand Agbada',
+      size: 'Custom',
+      price: 250000,
+      link: 'https://apparelbyezekiel.ng/#product/agbada-monarch'
+    });
+    const decodedMessage = decodeURIComponent(url.split('?text=')[1]);
+    expect(decodedMessage).toBe(
+      'Hello Apparel by Ezekiel, I want to order the Monarch Grand Agbada (Size: Custom) for ₦250,000. Link: https://apparelbyezekiel.ng/#product/agbada-monarch'
+    );
+  });
+});
+
+describe('isSizeSelected', () => {
+  it('returns true for valid sizes including Custom', () => {
+    expect(isSizeSelected('S')).toBe(true);
+    expect(isSizeSelected('M')).toBe(true);
+    expect(isSizeSelected('L')).toBe(true);
+    expect(isSizeSelected('XL')).toBe(true);
+    expect(isSizeSelected('XXL')).toBe(true);
+    expect(isSizeSelected('Custom')).toBe(true);
+  });
+
+  it('returns false for null, undefined, empty, or whitespace strings', () => {
+    expect(isSizeSelected(null)).toBe(false);
+    expect(isSizeSelected(undefined)).toBe(false);
+    expect(isSizeSelected('')).toBe(false);
+    expect(isSizeSelected('   ')).toBe(false);
   });
 });
 

@@ -12,10 +12,13 @@ export function formatPrice(amount) {
 /**
  * Build WhatsApp order link with prefilled order details
  * @param {string} phone e.g. "2347065086445"
- * @param {{ product: string, size?: string, price?: number|string }} details
+ * @param {{ product: string, size?: string, price?: number|string, link?: string }} details
  * @returns {string}
  */
-export function buildWhatsAppUrl(phone = '2347065086445', { product, size = 'M', price } = {}) {
+export function buildWhatsAppUrl(
+  phone = '2347065086445',
+  { product, size = 'M', price, link } = {}
+) {
   const cleanPhone = String(phone).replace(/\D/g, '');
   const priceText = price != null ? formatPrice(price) : '';
   const parts = [`Hello Apparel by Ezekiel, I want to order the ${product || 'garment'}`];
@@ -25,8 +28,36 @@ export function buildWhatsAppUrl(phone = '2347065086445', { product, size = 'M',
   if (priceText) {
     parts.push(`for ${priceText}`);
   }
-  const message = `${parts.join(' ')}.`;
+  let message = `${parts.join(' ')}.`;
+  if (link) {
+    message += ` Link: ${link}`;
+  }
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+}
+
+/**
+ * Validate that a size is selected
+ * @param {string|null|undefined} size
+ * @returns {boolean}
+ */
+export function isSizeSelected(size) {
+  return typeof size === 'string' && size.trim().length > 0;
+}
+
+/**
+ * Safely extract images array from product, with backwards compatibility
+ * for legacy products with a single `image` string.
+ * @param {object} product
+ * @returns {string[]}
+ */
+export function getProductImages(product) {
+  if (Array.isArray(product?.images) && product.images.length > 0) {
+    return product.images;
+  }
+  if (product?.image) {
+    return [product.image];
+  }
+  return [];
 }
 
 /**

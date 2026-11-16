@@ -1,5 +1,14 @@
 import productsData from './products.json';
-import { formatPrice, buildWhatsAppUrl, filterProducts, escapeHtml } from './utils.js';
+import {
+  formatPrice,
+  buildWhatsAppUrl,
+  filterProducts,
+  escapeHtml,
+  isSizeSelected,
+  getProductImages
+} from './utils.js';
+
+export { getProductImages };
 
 // SVG Icons (clean, high-legibility strokes)
 const ICONS = {
@@ -16,7 +25,17 @@ const ICONS = {
 };
 
 const CATEGORIES = ['All', 'Kaftans', 'Agbada', 'Senator', 'Accessories'];
+const SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'Custom'];
 const WHATSAPP_PHONE = '2347065086445';
+
+function getInitialWishlist() {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    return JSON.parse(localStorage.getItem('apparel_wishlist') || '[]');
+  } catch {
+    return [];
+  }
+}
 
 // App State
 const state = {
@@ -24,10 +43,17 @@ const state = {
   currentCategory: 'All',
   searchQuery: '',
   isMenuOpen: false,
-  wishlist: new Set(JSON.parse(localStorage.getItem('apparel_wishlist') || '[]'))
+  wishlist: new Set(getInitialWishlist()),
+  detail: {
+    productId: null,
+    selectedImageIndex: 0,
+    selectedSize: null,
+    sizeError: false
+  }
 };
 
 function saveWishlist() {
+  if (typeof localStorage === 'undefined') return;
   localStorage.setItem('apparel_wishlist', JSON.stringify([...state.wishlist]));
 }
 
@@ -104,7 +130,8 @@ function renderProductCards(products) {
   return products
     .map((product) => {
       const isSaved = state.wishlist.has(product.id);
-      const firstImage = product.images?.[0] || '';
+      const productImages = getProductImages(product);
+      const firstImage = productImages[0] || '';
       return `
         <article class="product-card" data-product-id="${escapeHtml(product.id)}">
           <div class="product-image-container">
@@ -247,56 +274,232 @@ function renderHome() {
   `;
 }
 
-function renderPlaceholder(productId) {
-  const product = state.products.find((p) => p.id === productId);
-  const productName = product ? product.name : 'Garment Detail';
-  const productPrice = product ? formatPrice(product.price) : '';
-  const productImg = product?.images?.[0] || '';
-
+function renderNotFound() {
   return `
     <!-- Top Bar -->
-    <header class="top-bar">
-      <div class="top-bar-inner">
-        <a href="#shop" class="icon-button" aria-label="Back to store">
+    <header class="detail-top-bar">
+      <div class="detail-top-bar-inner">
+        <a href="#shop" class="icon-button" id="not-found-back-top-btn" aria-label="Back to store">
           ${ICONS.back}
         </a>
-        <a href="#shop" class="top-bar-brand">APPAREL BY EZEKIEL</a>
+        <span class="detail-top-bar-brand">APPAREL BY EZEKIEL</span>
         <div class="top-bar-spacer" aria-hidden="true"></div>
       </div>
     </header>
 
-    <main class="page-container placeholder-page">
-      <div class="placeholder-card">
-        ${
-          productImg
-            ? `<div class="placeholder-image-wrapper">
-                 <img src="${escapeHtml(productImg)}" alt="${escapeHtml(productName)}" class="placeholder-image" />
-               </div>`
-            : ''
-        }
-        <span class="placeholder-badge">Coming Next</span>
-        <h1 class="placeholder-title">${escapeHtml(productName)}</h1>
-        ${productPrice ? `<p class="placeholder-price">${escapeHtml(productPrice)}</p>` : ''}
-        <p class="placeholder-text">
-          The full product detail view with custom sizing and bespoke order consultation is coming next in v1. Sanni and Ezekiel are reviewing one screen at a time.
+    <main class="page-container not-found-page" id="main-content">
+      <div class="not-found-card">
+        <span class="not-found-badge">Collection Item</span>
+        <h1 class="not-found-title">Garment Not Found</h1>
+        <p class="not-found-text">
+          We couldn't locate this piece in our active catalog. It may have been archived or is part of a bespoke archive.
         </p>
-        <a href="#shop" class="btn-primary" style="margin-top: 12px;">Back to Collection</a>
+        <a href="#shop" class="btn-primary" id="not-found-back-btn">Back to Collection</a>
       </div>
     </main>
+  `;
+}
 
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav" aria-label="Bottom Navigation">
-      <div class="bottom-nav-inner">
-        <a href="#shop" class="bottom-nav-item" id="nav-item-home">
-          ${ICONS.home}
-          <span>Home</span>
+function renderDetail(product) {
+  const isSaved = state.wishlist.has(product.id);
+  const images = getProductImages(product);
+  const selectedIdx = Math.min(
+    state.detail.selectedImageIndex,
+    Math.max(0, images.length - 1)
+  );
+  const activeImage = images[selectedIdx] || '';
+
+  // Related products from the same category
+  const relatedProducts = state.products
+    .filter((p) => p.id !== product.id && p.category === product.category)
+    .slice(0, 4);
+
+  return `
+    <!-- Top Bar: Back button, brand/details title, heart toggle -->
+    <header class="detail-top-bar">
+      <div class="detail-top-bar-inner">
+        <a href="#shop" class="icon-button" id="detail-back-btn" aria-label="Back to store">
+          ${ICONS.back}
         </a>
-        <a href="#shop" class="bottom-nav-item active" id="nav-item-shop" aria-current="page">
-          ${ICONS.shop}
-          <span>Shop</span>
-        </a>
+        <span class="detail-top-bar-title">Details</span>
+        <button
+          type="button"
+          class="icon-button detail-wishlist-btn ${isSaved ? 'active' : ''}"
+          data-wishlist-id="${escapeHtml(product.id)}"
+          aria-label="${isSaved ? 'Remove from wishlist' : 'Add to wishlist'}"
+        >
+          ${isSaved ? ICONS.heartFilled : ICONS.heartOutline}
+        </button>
       </div>
-    </nav>
+    </header>
+
+    <main class="page-container detail-page-container" id="main-content">
+      <div class="detail-layout">
+        <!-- Left: Image Gallery (Main photo + thumbnails) -->
+        <section class="detail-gallery" aria-label="Garment image gallery">
+          <div class="detail-main-image-card">
+            <img
+              id="detail-main-image"
+              src="${escapeHtml(activeImage)}"
+              alt="${escapeHtml(product.name)} - view ${selectedIdx + 1}"
+              class="detail-main-image"
+            />
+          </div>
+
+          ${
+            images.length > 1
+              ? `
+            <div class="detail-thumbnails-row" role="region" aria-label="Garment photo thumbnails">
+              ${images
+                .map(
+                  (img, idx) => `
+                <button
+                  type="button"
+                  class="detail-thumb-btn ${selectedIdx === idx ? 'active' : ''}"
+                  data-thumb-index="${idx}"
+                  aria-label="View photo ${idx + 1} of ${images.length}"
+                  aria-pressed="${selectedIdx === idx}"
+                >
+                  <img src="${escapeHtml(img)}" alt="" class="detail-thumb-img" loading="lazy" />
+                </button>
+              `
+                )
+                .join('')}
+            </div>
+          `
+              : ''
+          }
+        </section>
+
+        <!-- Right: Info, Sizes, CTA, Craftsmanship -->
+        <section class="detail-content" aria-label="Garment details and ordering">
+          <div class="detail-header-row">
+            <div class="detail-header-left">
+              <span class="detail-category">${escapeHtml(product.category)}</span>
+              <h1 class="detail-title">${escapeHtml(product.name)}</h1>
+            </div>
+            <div class="detail-header-right">
+              <span class="detail-price">${escapeHtml(formatPrice(product.price))}</span>
+            </div>
+          </div>
+
+          <!-- Size Selector Row (Placed above description for immediate mobile visibility) -->
+          <div class="detail-size-section" id="detail-size-section">
+            <div class="detail-size-header">
+              <h2 class="detail-subsection-title">Select Size</h2>
+              <span class="detail-size-note-hint">Standard & Bespoke Fit</span>
+            </div>
+
+            <div class="size-pill-group" role="radiogroup" aria-label="Select garment size">
+              ${SIZES.map(
+                (sz) => `
+                <button
+                  type="button"
+                  class="size-pill ${state.detail.selectedSize === sz ? 'active' : ''}"
+                  data-size="${escapeHtml(sz)}"
+                  aria-pressed="${state.detail.selectedSize === sz}"
+                  role="radio"
+                  aria-checked="${state.detail.selectedSize === sz}"
+                >
+                  ${escapeHtml(sz)}
+                </button>
+              `
+              ).join('')}
+            </div>
+
+            <!-- Custom Size One-Line Note -->
+            <div
+              class="custom-size-note"
+              id="custom-size-note"
+              ${state.detail.selectedSize === 'Custom' ? '' : 'hidden'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>We'll take your measurements on WhatsApp</span>
+            </div>
+
+            <!-- Size Required Inline Error Prompt -->
+            <div
+              class="size-error-message"
+              id="size-error-message"
+              role="alert"
+              ${state.detail.sizeError ? '' : 'hidden'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span>Please select a size to proceed with your order</span>
+            </div>
+          </div>
+
+          <!-- Desktop Inline CTA Button -->
+          <div class="detail-desktop-cta">
+            <button
+              type="button"
+              class="order-whatsapp-btn"
+              id="desktop-order-btn"
+              aria-label="Order ${escapeHtml(product.name)} on WhatsApp"
+            >
+              ${ICONS.whatsapp}
+              <span>Order on WhatsApp</span>
+            </button>
+            <p class="cta-guarantee-note">Direct concierge with Master Tailor Ezekiel • Fast delivery in Nigeria & abroad</p>
+          </div>
+
+          <p class="detail-description">${escapeHtml(product.description)}</p>
+
+          ${
+            product.details
+              ? `
+            <div class="detail-craftsmanship-card">
+              <h2 class="detail-subsection-title">Craftsmanship & Fabric</h2>
+              <p class="detail-craftsmanship-text">${escapeHtml(product.details)}</p>
+            </div>
+          `
+              : ''
+          }
+        </section>
+      </div>
+
+      <!-- You May Also Like Section -->
+      ${
+        relatedProducts.length > 0
+          ? `
+        <section class="related-section" aria-label="You may also like">
+          <div class="section-header">
+            <h2 class="section-title">You May Also Like</h2>
+            <span class="section-count">${relatedProducts.length} ${
+              relatedProducts.length === 1 ? 'piece' : 'pieces'
+            }</span>
+          </div>
+          <div class="related-grid">
+            ${renderProductCards(relatedProducts)}
+          </div>
+        </section>
+      `
+          : ''
+      }
+    </main>
+
+    <!-- Mobile Sticky Bottom CTA Bar (Only bottom bar on detail page) -->
+    <aside class="detail-mobile-cta-bar" aria-label="Order bar">
+      <div class="detail-mobile-cta-inner">
+        <button
+          type="button"
+          class="order-whatsapp-btn full-width"
+          id="mobile-order-btn"
+          aria-label="Order ${escapeHtml(product.name)} on WhatsApp"
+        >
+          ${ICONS.whatsapp}
+          <span>Order on WhatsApp</span>
+        </button>
+      </div>
+    </aside>
   `;
 }
 
@@ -521,6 +724,153 @@ function bindHomeEvents() {
   }
 }
 
+function selectDetailImage(index, product) {
+  const images = getProductImages(product);
+  if (index < 0 || index >= images.length) return;
+  state.detail.selectedImageIndex = index;
+
+  const mainImg = document.querySelector('#detail-main-image');
+  if (mainImg) {
+    mainImg.src = images[index];
+    mainImg.alt = `${product.name} - view ${index + 1}`;
+  }
+
+  document.querySelectorAll('.detail-thumb-btn').forEach((btn) => {
+    const btnIdx = Number(btn.dataset.thumbIndex);
+    const isActive = btnIdx === index;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+}
+
+function selectSize(sz) {
+  state.detail.selectedSize = sz;
+  state.detail.sizeError = false;
+  updateSizeSectionUI();
+}
+
+function updateSizeSectionUI() {
+  document.querySelectorAll('.size-pill').forEach((pill) => {
+    const sz = pill.dataset.size;
+    const isActive = sz === state.detail.selectedSize;
+    pill.classList.toggle('active', isActive);
+    pill.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    pill.setAttribute('aria-checked', isActive ? 'true' : 'false');
+  });
+
+  const customNote = document.querySelector('#custom-size-note');
+  if (customNote) {
+    if (state.detail.selectedSize === 'Custom') {
+      customNote.removeAttribute('hidden');
+    } else {
+      customNote.setAttribute('hidden', '');
+    }
+  }
+
+  const errorEl = document.querySelector('#size-error-message');
+  if (errorEl) {
+    if (state.detail.sizeError) {
+      errorEl.removeAttribute('hidden');
+    } else {
+      errorEl.setAttribute('hidden', '');
+    }
+  }
+}
+
+function handleOrderClick(product) {
+  if (!isSizeSelected(state.detail.selectedSize)) {
+    state.detail.sizeError = true;
+    updateSizeSectionUI();
+    const errorEl = document.querySelector('#size-error-message');
+    if (errorEl) {
+      errorEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    return;
+  }
+
+  const pageUrl = window.location.href;
+  const whatsappUrl = buildWhatsAppUrl(WHATSAPP_PHONE, {
+    product: product.name,
+    size: state.detail.selectedSize,
+    price: product.price,
+    link: pageUrl
+  });
+
+  window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+}
+
+function bindDetailEvents(product) {
+  // Back button in detail top bar
+  const backBtn = document.querySelector('#detail-back-btn');
+  if (backBtn) {
+    backBtn.onclick = (e) => {
+      e.preventDefault();
+      window.location.hash = '#shop';
+    };
+  }
+
+  // Back button on not-found page
+  const notFoundBackBtn = document.querySelector('#not-found-back-btn');
+  if (notFoundBackBtn) {
+    notFoundBackBtn.onclick = (e) => {
+      e.preventDefault();
+      window.location.hash = '#shop';
+    };
+  }
+  const notFoundTopBackBtn = document.querySelector('#not-found-back-top-btn');
+  if (notFoundTopBackBtn) {
+    notFoundTopBackBtn.onclick = (e) => {
+      e.preventDefault();
+      window.location.hash = '#shop';
+    };
+  }
+
+  // Wishlist toggle on top bar
+  const wishlistBtn = document.querySelector('.detail-wishlist-btn');
+  if (wishlistBtn) {
+    wishlistBtn.onclick = (e) => {
+      e.preventDefault();
+      toggleWishlist(product.id);
+    };
+  }
+
+  // Gallery thumbnails
+  document.querySelectorAll('.detail-thumb-btn').forEach((btn) => {
+    btn.onclick = () => {
+      const idx = Number(btn.dataset.thumbIndex);
+      selectDetailImage(idx, product);
+    };
+  });
+
+  // Size pills
+  document.querySelectorAll('.size-pill').forEach((pill) => {
+    pill.onclick = () => {
+      const sz = pill.dataset.size;
+      selectSize(sz);
+    };
+  });
+
+  // Mobile and desktop WhatsApp order buttons
+  const mobileOrderBtn = document.querySelector('#mobile-order-btn');
+  if (mobileOrderBtn) {
+    mobileOrderBtn.onclick = (e) => {
+      e.preventDefault();
+      handleOrderClick(product);
+    };
+  }
+
+  const desktopOrderBtn = document.querySelector('#desktop-order-btn');
+  if (desktopOrderBtn) {
+    desktopOrderBtn.onclick = (e) => {
+      e.preventDefault();
+      handleOrderClick(product);
+    };
+  }
+
+  // Related products wishlist buttons
+  bindWishlistClicks();
+}
+
 // -----------------------------------------------------------------------------
 // ROUTER & INITIALIZATION
 // -----------------------------------------------------------------------------
@@ -533,7 +883,39 @@ function render() {
 
   if (hash.startsWith('#product/')) {
     const productId = hash.replace('#product/', '').trim();
-    app.innerHTML = renderPlaceholder(productId);
+    const product = state.products.find((p) => p.id === productId);
+
+    if (!product) {
+      app.innerHTML = renderNotFound();
+      const notFoundBackBtn = document.querySelector('#not-found-back-btn');
+      if (notFoundBackBtn) {
+        notFoundBackBtn.onclick = (e) => {
+          e.preventDefault();
+          window.location.hash = '#shop';
+        };
+      }
+      const notFoundTopBackBtn = document.querySelector('#not-found-back-top-btn');
+      if (notFoundTopBackBtn) {
+        notFoundTopBackBtn.onclick = (e) => {
+          e.preventDefault();
+          window.location.hash = '#shop';
+        };
+      }
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    if (state.detail.productId !== product.id) {
+      state.detail = {
+        productId: product.id,
+        selectedImageIndex: 0,
+        selectedSize: null,
+        sizeError: false
+      };
+    }
+
+    app.innerHTML = renderDetail(product);
+    bindDetailEvents(product);
     window.scrollTo(0, 0);
     return;
   }
@@ -543,5 +925,7 @@ function render() {
   bindHomeEvents();
 }
 
-window.addEventListener('hashchange', render);
-window.addEventListener('DOMContentLoaded', render);
+if (typeof window !== 'undefined') {
+  window.addEventListener('hashchange', render);
+  window.addEventListener('DOMContentLoaded', render);
+}
