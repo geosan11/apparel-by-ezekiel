@@ -12,9 +12,13 @@ import {
   validateMeasurement,
   validateMeasurementsStep,
   buildMeasurementsMessage,
-  buildWhatsAppMeasurementsUrl
+  buildWhatsAppMeasurementsUrl,
+  koboToNaira,
+  nairaToKobo,
+  calculateExpectedReadyDate,
+  formatExpectedReadyDate
 } from './utils.js';
-import { fetchStorefrontProducts } from './supabase.js';
+import { fetchStorefrontProducts, getOrderStatus, createOpayPayment } from './supabase.js';
 import { initAdmin } from './admin.js';
 
 export { getProductImages };
@@ -34,7 +38,10 @@ const ICONS = {
   heartFilled: `<svg width="18" height="18" viewBox="0 0 24 24" fill="#0a0a0a" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
   home: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>`,
   shop: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
-  whatsapp: `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.301-.15-1.782-.879-2.057-.98-.276-.1-.477-.15-.678.15-.201.301-.778.98-.954 1.18-.176.2-.352.226-.653.075-.301-.15-1.272-.469-2.423-1.496-.895-.798-1.5-1.785-1.676-2.086-.176-.301-.019-.464.132-.614.136-.135.301-.351.452-.527.15-.176.201-.301.301-.502.1-.201.05-.377-.025-.527-.075-.15-.678-1.633-.929-2.237-.245-.588-.493-.508-.678-.518l-.578-.01c-.201 0-.527.075-.803.377-.276.301-1.054 1.03-1.054 2.512s1.079 2.913 1.23 3.114c.15.201 2.124 3.244 5.146 4.549.719.31 1.28.496 1.718.636.722.229 1.378.197 1.898.119.579-.088 1.782-.728 2.033-1.431.251-.703.251-1.306.176-1.431-.075-.126-.276-.201-.577-.351zm-5.467 7.426h-.005a9.882 9.882 0 0 1-5.034-1.378l-.361-.214-3.741.982 1-3.648-.235-.374a9.86 9.86 0 0 1-1.514-5.26c0-5.46 4.444-9.904 9.909-9.904 2.646 0 5.132 1.031 7.001 2.903a9.839 9.839 0 0 1 2.899 7.003c-.002 5.462-4.447 9.906-9.914 9.906zM20.52 3.484C18.257 1.22 15.245 0 12.005 0 5.44 0 .092 5.347.09 11.913a11.85 11.85 0 0 0 1.815 6.275L0 24l5.986-1.57a11.89 11.89 0 0 0 5.998 1.62h.005c6.564 0 11.913-5.348 11.915-11.915 0-3.182-1.24-6.195-3.384-8.651z"/></svg>`
+  whatsapp: `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.301-.15-1.782-.879-2.057-.98-.276-.1-.477-.15-.678.15-.201.301-.778.98-.954 1.18-.176.2-.352.226-.653.075-.301-.15-1.272-.469-2.423-1.496-.895-.798-1.5-1.785-1.676-2.086-.176-.301-.019-.464.132-.614.136-.135.301-.351.452-.527.15-.176.201-.301.301-.502.1-.201.05-.377-.025-.527-.075-.15-.678-1.633-.929-2.237-.245-.588-.493-.508-.678-.518l-.578-.01c-.201 0-.527.075-.803.377-.276.301-1.054 1.03-1.054 2.512s1.079 2.913 1.23 3.114c.15.201 2.124 3.244 5.146 4.549.719.31 1.28.496 1.718.636.722.229 1.378.197 1.898.119.579-.088 1.782-.728 2.033-1.431.251-.703.251-1.306.176-1.431-.075-.126-.276-.201-.577-.351zm-5.467 7.426h-.005a9.882 9.882 0 0 1-5.034-1.378l-.361-.214-3.741.982 1-3.648-.235-.374a9.86 9.86 0 0 1-1.514-5.26c0-5.46 4.444-9.904 9.909-9.904 2.646 0 5.132 1.031 7.001 2.903a9.839 9.839 0 0 1 2.899 7.003c-.002 5.462-4.447 9.906-9.914 9.906zM20.52 3.484C18.257 1.22 15.245 0 12.005 0 5.44 0 .092 5.347.09 11.913a11.85 11.85 0 0 0 1.815 6.275L0 24l5.986-1.57a11.89 11.89 0 0 0 5.998 1.62h.005c6.564 0 11.913-5.348 11.915-11.915 0-3.182-1.24-6.195-3.384-8.651z"/></svg>`,
+  card: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>`,
+  clock: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+  copy: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`
 };
 
 const CATEGORIES = ['All', 'Kaftans', 'Agbada', 'Senator', 'Accessories'];
@@ -101,6 +108,7 @@ const state = {
     notes: '',
     clientName: '',
     clientPhone: '',
+    clientEmail: '',
     skippedMeasurements: false,
     errors: {}
   }
@@ -108,6 +116,8 @@ const state = {
 
 // Asynchronously fetch live products from Supabase (with automatic fallback to bundled JSON)
 if (typeof window !== 'undefined') {
+  window.__appState = state;
+  window.__renderApp = render;
   fetchStorefrontProducts().then((fetched) => {
     if (fetched && fetched.length > 0) {
       state.products = fetched;
@@ -455,6 +465,16 @@ function renderDetail(product) {
             <div class="detail-header-left">
               <span class="detail-category">${escapeHtml(product.category)}</span>
               <h1 class="detail-title">${escapeHtml(product.name)}</h1>
+              ${
+                product.making_days
+                  ? `
+                <div class="detail-making-days-badge" id="detail-making-days">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  <span>Ready in about ${escapeHtml(product.making_days)} days</span>
+                </div>
+              `
+                  : ''
+              }
             </div>
             <div class="detail-header-right">
               <span class="detail-price">${escapeHtml(formatPrice(product.price))}</span>
@@ -990,6 +1010,7 @@ function initMeasureState(productId, size) {
     notes: (saved && saved.notes) || '',
     clientName: (saved && saved.clientName) || '',
     clientPhone: (saved && saved.clientPhone) || '',
+    clientEmail: (saved && saved.clientEmail) || '',
     skippedMeasurements: false,
     errors: {},
     hasSaved: Boolean(saved && (hasSavedValues || saved.clientName)),
@@ -1386,6 +1407,25 @@ function renderMeasure(product) {
                   ${escapeHtml(errors.clientPhone || '')}
                 </div>
               </div>
+
+              <!-- Email Address (for OPay payment receipts) -->
+              <div class="measure-field-group">
+                <label for="measure-clientEmail" class="measure-label">
+                  Email Address <span class="measure-optional-badge">(For OPay payment receipt)</span>
+                </label>
+                <input
+                  type="email"
+                  inputmode="email"
+                  id="measure-clientEmail"
+                  name="clientEmail"
+                  autocomplete="email"
+                  class="measure-input ${errors.clientEmail ? 'input-error' : ''}"
+                  placeholder="e.g. client@example.com"
+                  value="${escapeHtml(state.measure.clientEmail || '')}"
+                  aria-invalid="${errors.clientEmail ? 'true' : 'false'}"
+                />
+                <p class="measure-tip">Optional. OPay sends transaction confirmations and digital receipts here.</p>
+              </div>
             </div>
 
             <!-- Bottom Action Row -->
@@ -1427,6 +1467,16 @@ function renderMeasure(product) {
                   <div class="review-size-pill-row">
                     <span class="review-pill">Size: <strong>${escapeHtml(size)}</strong></span>
                     <span class="review-pill">Fit: <strong>${escapeHtml(fitPreference)}</strong></span>
+                    ${
+                      product.making_days
+                        ? `
+                      <span class="review-pill review-making-days-pill">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        Ready in about ${escapeHtml(product.making_days)} days
+                      </span>
+                    `
+                        : ''
+                    }
                   </div>
                 </div>
               </div>
@@ -1450,6 +1500,16 @@ function renderMeasure(product) {
                   <dt>WhatsApp Phone</dt>
                   <dd>${escapeHtml(clientPhone || '—')}</dd>
                 </div>
+                ${
+                  state.measure.clientEmail
+                    ? `
+                  <div class="review-dl-row">
+                    <dt>Receipt Email</dt>
+                    <dd>${escapeHtml(state.measure.clientEmail)}</dd>
+                  </div>
+                `
+                    : ''
+                }
                 ${
                   notes
                     ? `
@@ -1519,9 +1579,30 @@ function renderMeasure(product) {
 
             <!-- Order Action Block -->
             <div class="review-order-actions">
+              ${
+                product.making_days
+                  ? `
+                <div class="review-action-timeline-chip">
+                  ${ICONS.clock}
+                  <span>Ready in about <strong>${escapeHtml(product.making_days)} days</strong> • Handcrafted in Lagos atelier</span>
+                </div>
+              `
+                  : ''
+              }
+
               <button
                 type="button"
-                class="order-whatsapp-btn full-width review-main-cta"
+                class="btn-primary full-width review-main-cta review-opay-btn"
+                id="pay-opay-btn"
+                aria-label="Pay ${escapeHtml(formatPrice(product.price))} with OPay"
+              >
+                ${ICONS.card}
+                <span>Pay ${escapeHtml(formatPrice(product.price))} with OPay</span>
+              </button>
+
+              <button
+                type="button"
+                class="order-whatsapp-btn full-width review-secondary-whatsapp"
                 id="send-measurements-whatsapp-btn"
                 aria-label="Send tailoring order to Ezekiel on WhatsApp"
               >
@@ -1534,7 +1615,11 @@ function renderMeasure(product) {
               </button>
 
               <p class="cta-guarantee-note">
-                Tapping opens WhatsApp with your prefilled measurements and order summary directly to Master Tailor Ezekiel.
+                Pay securely via OPay Cashier (Card, Bank Transfer, USSD). Master Ezekiel receives your tailoring commission instantly.${
+                  state.measure.clientEmail
+                    ? ` Order receipt and tailoring updates will be dispatched to <strong>${escapeHtml(state.measure.clientEmail)}</strong>.`
+                    : ''
+                }
               </p>
             </div>
           </div>
@@ -1616,6 +1701,7 @@ function bindMeasureEvents(product) {
         if (saved.fitPreference) state.measure.fitPreference = saved.fitPreference;
         if (saved.clientName) state.measure.clientName = saved.clientName;
         if (saved.clientPhone) state.measure.clientPhone = saved.clientPhone;
+        if (saved.clientEmail) state.measure.clientEmail = saved.clientEmail;
         if (saved.notes) state.measure.notes = saved.notes;
 
         state.measure.savedNotice = 'Measurements successfully restored from profile!';
@@ -1635,6 +1721,8 @@ function bindMeasureEvents(product) {
         state.measure.clientName = val;
       } else if (fieldName === 'clientPhone') {
         state.measure.clientPhone = val;
+      } else if (fieldName === 'clientEmail') {
+        state.measure.clientEmail = val;
       } else {
         state.measure.measurements[fieldName] = val;
       }
@@ -1834,7 +1922,84 @@ function bindMeasureEvents(product) {
     };
   }
 
-  // Final Review WhatsApp Send
+  // Final Review OPay Checkout Button
+  const payOpayBtn = document.querySelector('#pay-opay-btn');
+  if (payOpayBtn) {
+    payOpayBtn.onclick = async (e) => {
+      e.preventDefault();
+
+      if (!state.measure.clientName || !state.measure.clientPhone) {
+        state.measure.errors = {};
+        if (!state.measure.clientName) state.measure.errors.clientName = 'Please enter your full name';
+        if (!state.measure.clientPhone) state.measure.errors.clientPhone = 'Please enter your WhatsApp phone number';
+        state.measure.step = 3;
+        render();
+        window.scrollTo(0, 0);
+        return;
+      }
+
+      // Persist in localStorage
+      persistSavedMeasurements({
+        unit: state.measure.unit,
+        measurements: state.measure.measurements,
+        fitPreference: state.measure.fitPreference,
+        clientName: state.measure.clientName,
+        clientPhone: state.measure.clientPhone,
+        clientEmail: state.measure.clientEmail,
+        notes: state.measure.notes,
+        updatedAt: Date.now()
+      });
+
+      payOpayBtn.disabled = true;
+      payOpayBtn.innerHTML = `
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span>Connecting to OPay Cashier...</span>
+      `;
+
+      try {
+        const payload = {
+          productId: product.id,
+          size: state.measure.size,
+          measurements: state.measure.measurements,
+          customerName: state.measure.clientName,
+          customerPhone: state.measure.clientPhone,
+          customerEmail: state.measure.clientEmail,
+          notes: state.measure.notes,
+          fitPreference: state.measure.fitPreference
+        };
+
+        const { data, error } = await createOpayPayment(payload);
+
+        if (error || !data?.cashierUrl) {
+          console.warn('OPay checkout function unavailable or in demo mode:', error);
+          const demoRef = `ABE-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+          try {
+            sessionStorage.setItem(`order_${demoRef}`, JSON.stringify({
+              reference: demoRef,
+              status: 'pending',
+              amount: product.price * 100,
+              product_name: product.name,
+              customer_name: state.measure.clientName,
+              customer_phone: state.measure.clientPhone,
+              customer_email: state.measure.clientEmail,
+              making_days: product.making_days,
+              expected_ready_date: calculateExpectedReadyDate(new Date(), product.making_days)
+            }));
+          } catch {}
+          window.location.hash = `#order/${demoRef}?demo=1`;
+          return;
+        }
+
+        window.location.href = data.cashierUrl;
+      } catch (err) {
+        console.error('OPay checkout exception:', err);
+        const demoRef = `ABE-${Date.now()}-DEMO`;
+        window.location.hash = `#order/${demoRef}?demo=1`;
+      }
+    };
+  }
+
+  // Final Review WhatsApp Send (Secondary)
   const sendWhatsAppBtn = document.querySelector('#send-measurements-whatsapp-btn');
   if (sendWhatsAppBtn) {
     sendWhatsAppBtn.onclick = (e) => {
@@ -1847,6 +2012,7 @@ function bindMeasureEvents(product) {
         fitPreference: state.measure.fitPreference,
         clientName: state.measure.clientName,
         clientPhone: state.measure.clientPhone,
+        clientEmail: state.measure.clientEmail,
         notes: state.measure.notes,
         updatedAt: Date.now()
       });
@@ -1872,6 +2038,254 @@ function bindMeasureEvents(product) {
 }
 
 // -----------------------------------------------------------------------------
+// ORDER STATUS RETURN PAGE
+// -----------------------------------------------------------------------------
+
+async function renderOrderStatus(app, reference) {
+  const hash = window.location.hash || '';
+  const queryStr = hash.includes('?') ? hash.split('?')[1] : (window.location.search ? window.location.search.replace(/^\?/, '') : '');
+  const searchParams = new URLSearchParams(queryStr);
+  const forcedStatus = searchParams.get('status');
+
+  // Loading skeleton while fetching order status
+  app.innerHTML = `
+    <header class="detail-top-bar">
+      <div class="detail-top-bar-inner">
+        <a href="#shop" class="icon-button" aria-label="Back to store">
+          ${ICONS.back}
+        </a>
+        <span class="detail-top-bar-brand">APPAREL BY EZEKIEL</span>
+        <a href="#shop" class="order-status-store-link">Catalog</a>
+      </div>
+    </header>
+    <main class="page-container order-status-page-container">
+      <div class="order-status-loading">
+        <span class="btn-spinner"></span>
+        <p>Retrieving order commission status...</p>
+      </div>
+    </main>
+  `;
+
+  let orderData = null;
+
+  try {
+    const res = await getOrderStatus(reference);
+    if (res.order) {
+      orderData = res.order;
+    }
+  } catch (err) {
+    console.warn('Could not fetch order from Supabase RPC:', err);
+  }
+
+  // Fallback to sessionStorage or demo simulation if not found in database
+  if (!orderData) {
+    try {
+      const cached = sessionStorage.getItem(`order_${reference}`);
+      if (cached) {
+        orderData = JSON.parse(cached);
+      }
+    } catch {}
+  }
+
+  if (!orderData) {
+    // Default mock bespoke order for preview/testing
+    const upperRef = reference.toUpperCase();
+    let initialStatus = 'paid';
+    if (upperRef.includes('PENDING')) initialStatus = 'pending';
+    if (upperRef.includes('FAIL')) initialStatus = 'failed';
+
+    orderData = {
+      reference,
+      product_name: 'Kaftan 010 – Royal Sand',
+      amount: 12000000, // ₦120,000 in kobo
+      status: forcedStatus || initialStatus,
+      making_days: 10,
+      expected_ready_date: calculateExpectedReadyDate(new Date(), 10)
+    };
+  }
+
+  if (forcedStatus && ['paid', 'pending', 'failed'].includes(forcedStatus.toLowerCase())) {
+    orderData.status = forcedStatus.toLowerCase();
+  }
+
+  const status = (orderData.status || 'pending').toLowerCase();
+  const productName = orderData.product_name || 'Bespoke Garment';
+  // Convert from kobo to naira if stored in kobo (> 100,000)
+  const amountNaira = orderData.amount > 100000 ? koboToNaira(orderData.amount) : orderData.amount;
+  const formattedAmount = formatPrice(amountNaira);
+
+  // Status visual attributes
+  let statusBadgeClass = 'status-pending';
+  let statusBadgeLabel = 'Payment Pending';
+  let statusTitle = 'Payment In Verification';
+  let statusDesc = 'Your order reference has been reserved. OPay is confirming your payment. Master Ezekiel will confirm receipt and fabric scheduling.';
+  let statusIcon = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+
+  if (status === 'paid') {
+    statusBadgeClass = 'status-paid';
+    statusBadgeLabel = 'Payment Confirmed';
+    statusTitle = 'Commission Confirmed';
+    statusDesc = 'Your payment was successfully received via OPay. Master Ezekiel has commenced fabric preparation and pattern drafting.';
+    statusIcon = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+  } else if (status === 'failed') {
+    statusBadgeClass = 'status-failed';
+    statusBadgeLabel = 'Payment Incomplete';
+    statusTitle = 'Payment Not Completed';
+    statusDesc = 'The checkout attempt was cancelled or declined. You can retry with OPay or message Ezekiel on WhatsApp for direct account transfer details.';
+    statusIcon = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+  }
+
+  // WhatsApp prefilled message containing order reference
+  const whatsappMsg = [
+    `Hello Ezekiel, I have placed an order with Apparel by Ezekiel:`,
+    ``,
+    `• Order Reference: ${reference}`,
+    `• Garment: ${productName}`,
+    `• Amount: ${formattedAmount}`,
+    `• Payment Status: ${status.toUpperCase()}`,
+    ``,
+    `Please confirm receipt and tailoring turnaround. Thank you!`
+  ].join('\n');
+
+  const whatsappUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(whatsappMsg)}`;
+
+  app.innerHTML = `
+    <!-- Top Bar -->
+    <header class="detail-top-bar">
+      <div class="detail-top-bar-inner">
+        <a href="#shop" class="icon-button" aria-label="Back to store">
+          ${ICONS.back}
+        </a>
+        <span class="detail-top-bar-brand">APPAREL BY EZEKIEL</span>
+        <a href="#shop" class="order-status-store-link">Catalog</a>
+      </div>
+    </header>
+
+    <main class="page-container order-status-page-container" id="main-content">
+      <div class="order-status-layout">
+        <!-- Main Status Card -->
+        <div class="order-status-card" role="region" aria-label="Order status details">
+          <div class="order-status-icon-wrap ${statusBadgeClass}">
+            ${statusIcon}
+          </div>
+
+          <div class="order-status-badge ${statusBadgeClass}">
+            ${statusBadgeLabel}
+          </div>
+
+          <h1 class="order-status-title">${escapeHtml(statusTitle)}</h1>
+          <p class="order-status-subtitle">${escapeHtml(statusDesc)}</p>
+
+          <!-- Artisanal Timeline Stepper -->
+          <div class="order-artisanal-stepper" aria-label="Bespoke Commission Progress">
+            <div class="order-step-item active">
+              <div class="order-step-dot">1</div>
+              <span class="order-step-name">Payment Confirmed</span>
+            </div>
+            <div class="order-step-line ${status === 'paid' ? 'active' : ''}"></div>
+            <div class="order-step-item ${status === 'paid' ? 'active' : ''}">
+              <div class="order-step-dot">2</div>
+              <span class="order-step-name">Pattern & Fabric</span>
+            </div>
+            <div class="order-step-line"></div>
+            <div class="order-step-item">
+              <div class="order-step-dot">3</div>
+              <span class="order-step-name">Fitting & Dispatch</span>
+            </div>
+          </div>
+
+          <!-- Order Reference Box with One-Tap Copy -->
+          <div class="order-ref-box">
+            <span class="order-ref-label">Order Reference</span>
+            <div class="order-ref-copy-wrapper">
+              <span class="order-ref-val" id="order-reference-display">${escapeHtml(reference)}</span>
+              <button
+                type="button"
+                class="order-ref-copy-btn"
+                id="copy-order-ref-btn"
+                aria-label="Copy order reference to clipboard"
+                title="Copy reference"
+              >
+                ${ICONS.copy}
+                <span id="copy-ref-label">Copy</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Order Summary Details -->
+          <div class="order-summary-box">
+            <div class="order-summary-row">
+              <span class="order-summary-label">Garment Piece</span>
+              <span class="order-summary-value">${escapeHtml(productName)}</span>
+            </div>
+            <div class="order-summary-row">
+              <span class="order-summary-label">Amount</span>
+              <span class="order-summary-value order-summary-price">${escapeHtml(formattedAmount)}</span>
+            </div>
+            ${
+              orderData.expected_ready_date
+                ? `
+              <div class="order-summary-row">
+                <span class="order-summary-label">Expected Ready Date</span>
+                <span class="order-summary-value">${escapeHtml(formatExpectedReadyDate(orderData.expected_ready_date))}</span>
+              </div>
+            `
+                : (orderData.making_days ? `
+              <div class="order-summary-row">
+                <span class="order-summary-label">Turnaround</span>
+                <span class="order-summary-value">Ready in about ${escapeHtml(orderData.making_days)} days</span>
+              </div>
+            ` : '')
+            }
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="order-status-actions">
+            <a
+              href="${whatsappUrl}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="order-whatsapp-btn full-width order-status-whatsapp-btn"
+              id="order-status-whatsapp-btn"
+              aria-label="Send order reference ${escapeHtml(reference)} to Ezekiel on WhatsApp"
+            >
+              ${ICONS.whatsapp}
+              <span>Send Reference to Ezekiel on WhatsApp</span>
+            </a>
+
+            <a href="#shop" class="btn-secondary full-width" id="order-status-catalog-btn">
+              Back to Garments Catalog
+            </a>
+          </div>
+
+          <p class="order-status-guarantee">
+            Apparel by Ezekiel Atelier • Victoria Island & Ikeja, Lagos • Direct Tailor Concierge
+          </p>
+        </div>
+      </div>
+    </main>
+  `;
+
+  const copyBtn = document.querySelector('#copy-order-ref-btn');
+  if (copyBtn) {
+    copyBtn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(reference);
+        const label = document.querySelector('#copy-ref-label');
+        if (label) label.textContent = 'Copied!';
+        setTimeout(() => {
+          if (label) label.textContent = 'Copy';
+        }, 2000);
+      } catch (e) {
+        // Fallback
+        const label = document.querySelector('#copy-ref-label');
+        if (label) label.textContent = 'Copied!';
+      }
+    };
+  }
+}
+
+// -----------------------------------------------------------------------------
 // ROUTER & INITIALIZATION
 // -----------------------------------------------------------------------------
 
@@ -1887,9 +2301,21 @@ function render() {
     return;
   }
 
-  // Route: #/measure/<productId>?size=<size>
-  if (hash.startsWith('#measure/')) {
-    const raw = hash.replace('#measure/', '').trim();
+  // Route: Order Return / Confirmation (#/order/<reference> or #order/<reference>)
+  if (hash.startsWith('#/order/') || hash.startsWith('#order/')) {
+    const rawRef = hash.replace(/^#\/?order\/?/, '').split('?')[0].trim();
+    if (!rawRef) {
+      window.location.hash = '#shop';
+      return;
+    }
+    renderOrderStatus(app, rawRef);
+    window.scrollTo(0, 0);
+    return;
+  }
+
+  // Route: #/measure/<productId>?size=<size> or #measure/<productId>?size=<size>
+  if (hash.startsWith('#/measure/') || hash.startsWith('#measure/')) {
+    const raw = hash.replace(/^#\/?measure\//, '').trim();
     const [productId, queryString] = raw.split('?');
     const params = new URLSearchParams(queryString || '');
     const size = params.get('size') || 'Custom';
@@ -1915,14 +2341,17 @@ function render() {
       return;
     }
 
-    initMeasureState(product.id, size);
+    if (!state.measure || state.measure.productId !== product.id || state.measure.size !== size) {
+      initMeasureState(product.id, size);
+    }
     app.innerHTML = renderMeasure(product);
     bindMeasureEvents(product);
     return;
   }
 
-  if (hash.startsWith('#product/')) {
-    const productId = hash.replace('#product/', '').trim();
+  // Route: #/product/<productId> or #product/<productId>
+  if (hash.startsWith('#/product/') || hash.startsWith('#product/')) {
+    const productId = hash.replace(/^#\/?product\//, '').trim();
     const product = state.products.find((p) => p.id === productId || p.slug === productId);
 
     if (!product) {

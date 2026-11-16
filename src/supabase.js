@@ -4,7 +4,8 @@ import {
   calculateResizeDimensions,
   normalizeProduct,
   loadProductsFallback,
-  generateSlug
+  generateSlug,
+  validateMakingDays
 } from './utils.js';
 
 // Environment variables provided by Vite
@@ -125,10 +126,12 @@ export async function upsertProduct(product) {
     return { product: null, error: new Error('Supabase is not configured') };
   }
 
+  const makingDaysRes = validateMakingDays(product.making_days);
   const payload = {
     name: product.name,
     category: product.category,
     price: Number(product.price) || 0,
+    making_days: makingDaysRes.valid ? makingDaysRes.value : null,
     description: product.description || '',
     details: product.details || '',
     sizes: product.sizes || ['S', 'M', 'L', 'XL', 'XXL', 'Custom'],
@@ -327,5 +330,94 @@ export async function uploadProductPhoto(blob, fileName, slugPrefix = 'product')
     return { publicUrl: data.publicUrl, error: null };
   } catch (err) {
     return { publicUrl: null, error: err };
+  }
+}
+
+/**
+ * Fetch public order status using security-definer RPC get_order_status
+ * Does not expose customer private contact or measurements info.
+ * @param {string} reference
+ * @returns {Promise<{ order: object|null, error: any }>}
+ */
+export async function getOrderStatus(reference) {
+  if (!supabase || !reference) {
+    return { order: null, error: new Error('Supabase not configured or missing reference') };
+  }
+
+  try {
+    const { data, error } = await supabase.rpc('get_order_status', {
+      lookup_reference: reference.trim()
+    });
+
+    if (error) {
+      return { order: null, error };
+    }
+
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) {
+      return { order: null, error: new Error('Order not found') };
+    }
+
+    return {
+      order: {
+        reference: reference.trim(),
+        status: row.status,
+        amount: Number(row.amount) || 0,
+        product_name: row.product_name
+      },
+      error: null
+    };
+  } catch (err) {
+    return { order: null, error: err };
+  }
+}
+
+/**
+ * Fetch all customer orders for admin dashboard (requires admin session)
+ * @returns {Promise<{ orders: Array, error: any }>}
+ */
+export async function fetchAdminOrders() {
+  if (!supabase) {
+    return { orders: [], error: new Error('Supabase is not configured') };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      return { orders: [], error };
+    }
+
+    return { orders: data || [], error: null };
+  } catch (err) {
+    return { orders: [], error: err };
+  }
+}
+
+/**
+ * Invoke Supabase Edge Function to initiate OPay Cashier payment
+ * @param {object} payload
+ * @returns {Promise<{ data: object|null, error: any }>}
+ */
+export async function createOpayPayment(payload) {
+  if (!supabase) {
+    return { data: null, error: new Error('Supabase is not configured') };
+  }
+
+  try {
+    const { data, error } = await supabase.functions.invoke('opay-create-payment', {
+      body: payload
+    });
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: err };
   }
 }

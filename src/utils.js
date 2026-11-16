@@ -508,6 +508,8 @@ export function normalizeProduct(p) {
     ? p.sizes
     : ['S', 'M', 'L', 'XL', 'XXL', 'Custom'];
   const sizes = rawSizes.filter((s) => typeof s === 'string' && s.trim().length > 0);
+  const makingDaysRes = validateMakingDays(p.making_days);
+  const making_days = makingDaysRes.valid ? makingDaysRes.value : null;
 
   return {
     id: id || slug || 'product',
@@ -515,6 +517,7 @@ export function normalizeProduct(p) {
     name: (p.name || 'Untitled Garment').trim(),
     category: (p.category || 'Kaftans').trim(),
     price: parsePrice(p.price),
+    making_days,
     description: (p.description || '').trim(),
     details: (p.details || '').trim(),
     sizes,
@@ -541,5 +544,158 @@ export function loadProductsFallback(apiProducts, fallbackProducts = []) {
     return fallbackProducts.map(normalizeProduct).filter(Boolean);
   }
   return [];
+}
+
+/**
+ * Convert Nigerian Naira (NGN) to Kobo (1 Naira = 100 Kobo).
+ * Always returns a non-negative integer.
+ * @param {number|string|null|undefined} amount
+ * @returns {number} Amount in kobo
+ */
+export function nairaToKobo(amount) {
+  if (amount == null) return 0;
+  let num;
+  if (typeof amount === 'number') {
+    num = amount;
+  } else {
+    const clean = String(amount).replace(/[₦,$\s]/g, '').trim();
+    num = parseFloat(clean);
+  }
+  if (isNaN(num) || num <= 0) return 0;
+  return Math.round(num * 100);
+}
+
+/**
+ * Convert Kobo to Nigerian Naira (NGN).
+ * @param {number|string|null|undefined} kobo
+ * @returns {number} Amount in Naira
+ */
+export function koboToNaira(kobo) {
+  if (kobo == null) return 0;
+  const num = typeof kobo === 'number' ? kobo : Number(kobo);
+  if (isNaN(num) || num <= 0) return 0;
+  return Math.round(num / 100);
+}
+
+/**
+ * Validate tailoring turnaround time (making_days).
+ * Must be null/empty or an integer between 1 and 90.
+ * @param {*} days
+ * @returns {{ valid: boolean, value: number|null, error?: string }}
+ */
+export function validateMakingDays(days) {
+  if (days === null || days === undefined || days === '') {
+    return { valid: true, value: null };
+  }
+  const clean = typeof days === 'string' ? days.trim() : days;
+  if (clean === '') {
+    return { valid: true, value: null };
+  }
+  const num = Number(clean);
+  if (!Number.isInteger(num)) {
+    return { valid: false, value: null, error: 'Days to make must be an integer' };
+  }
+  if (num < 1 || num > 90) {
+    return { valid: false, value: null, error: 'Days to make must be between 1 and 90' };
+  }
+  return { valid: true, value: num };
+}
+
+/**
+ * Calculate expected ready date given a start date and turnaround days.
+ * @param {Date|string|number} startDate
+ * @param {number|string|null} makingDays
+ * @returns {string|null} ISO date string (YYYY-MM-DD) or null
+ */
+export function calculateExpectedReadyDate(startDate = new Date(), makingDays = null) {
+  const { valid, value } = validateMakingDays(makingDays);
+  if (!valid || value == null || value <= 0) return null;
+  const date = startDate instanceof Date ? new Date(startDate.getTime()) : new Date(startDate);
+  if (isNaN(date.getTime())) return null;
+  date.setDate(date.getDate() + value);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Human-readable date formatter for expected ready date
+ * e.g. "2026-11-26" -> "Thu, Nov 26, 2026"
+ * @param {Date|string} dateInput
+ * @returns {string}
+ */
+export function formatExpectedReadyDate(dateInput) {
+  if (!dateInput) return '';
+  const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+  if (isNaN(date.getTime())) return String(dateInput);
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+/**
+ * Recursively sort object keys alphabetically for signature hashing
+ * @param {*} obj
+ * @returns {*}
+ */
+export function sortObjectKeys(obj) {
+  if (typeof obj !== 'object' || obj === null) return obj;
+  if (Array.isArray(obj)) return obj.map(sortObjectKeys);
+  return Object.keys(obj)
+    .sort()
+    .reduce((acc, key) => {
+      acc[key] = sortObjectKeys(obj[key]);
+      return acc;
+    }, {});
+}
+
+/**
+ * Generate HMAC-SHA512 hex signature for OPay API requests/verification
+ * @param {object|string} payload
+ * @param {string} secretKey
+ * @returns {Promise<string>} Hex signature
+ */
+export async function generateOpaySignature(payload, secretKey) {
+  if (!secretKey) throw new Error('Secret key is required for OPay signature');
+  const message =
+    typeof payload === 'object' && payload !== null
+      ? JSON.stringify(sortObjectKeys(payload))
+      : String(payload ?? '');
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secretKey),
+    { name: 'HMAC', hash: 'SHA-512' },
+    false,
+    ['sign']
+  );
+  const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(message));
+  return Array.from(new Uint8Array(signatureBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
+ * Verify incoming OPay webhook signature with constant-time equality check
+ * @param {object|string} rawBody
+ * @param {string} signature
+ * @param {string} secretKey
+ * @returns {Promise<boolean>}
+ */
+export async function verifyOpaySignature(rawBody, signature, secretKey) {
+  if (!signature || !secretKey) return false;
+  const cleanSig = String(signature).replace(/^Bearer\s+/i, '').trim().toLowerCase();
+  const computed = await generateOpaySignature(rawBody, secretKey);
+  if (cleanSig.length !== computed.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < cleanSig.length; i++) {
+    mismatch |= cleanSig.charCodeAt(i) ^ computed.charCodeAt(i);
+  }
+  return mismatch === 0;
 }
 
