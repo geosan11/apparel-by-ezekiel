@@ -5,7 +5,13 @@ import {
   filterProducts,
   escapeHtml,
   isSizeSelected,
-  getProductImages
+  getProductImages,
+  MEASUREMENT_CONFIG,
+  convertMeasurement,
+  validateMeasurement,
+  validateMeasurementsStep,
+  buildMeasurementsMessage,
+  buildWhatsAppMeasurementsUrl
 } from './utils.js';
 
 export { getProductImages };
@@ -15,6 +21,10 @@ const ICONS = {
   menu: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>`,
   close: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
   back: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>`,
+  arrowRight: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`,
+  check: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+  tape: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="10" rx="2"></rect><line x1="6" y1="7" x2="6" y2="11"></line><line x1="10" y1="7" x2="10" y2="11"></line><line x1="14" y1="7" x2="14" y2="11"></line><line x1="18" y1="7" x2="18" y2="11"></line></svg>`,
+  edit: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`,
   search: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
   clear: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`,
   heartOutline: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
@@ -27,6 +37,7 @@ const ICONS = {
 const CATEGORIES = ['All', 'Kaftans', 'Agbada', 'Senator', 'Accessories'];
 const SIZES = ['S', 'M', 'L', 'XL', 'XXL', 'Custom'];
 const WHATSAPP_PHONE = '2347065086445';
+const STORAGE_KEY_MEASUREMENTS = 'apparel_saved_measurements';
 
 function getInitialWishlist() {
   if (typeof localStorage === 'undefined') return [];
@@ -35,6 +46,23 @@ function getInitialWishlist() {
   } catch {
     return [];
   }
+}
+
+function getSavedMeasurements() {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_MEASUREMENTS);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistSavedMeasurements(data) {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEY_MEASUREMENTS, JSON.stringify(data));
+  } catch {}
 }
 
 // App State
@@ -49,6 +77,29 @@ const state = {
     selectedImageIndex: 0,
     selectedSize: null,
     sizeError: false
+  },
+  measure: {
+    productId: null,
+    size: 'Custom',
+    step: 1, // 1: Upper body, 2: Lower body, 3: Fit & details, 4: Review
+    unit: 'in', // 'in' or 'cm'
+    measurements: {
+      chest: '',
+      shoulder: '',
+      sleeve: '',
+      neck: '',
+      waist: '',
+      hip: '',
+      trouserLength: '',
+      kaftanLength: '',
+      height: ''
+    },
+    fitPreference: 'Regular',
+    notes: '',
+    clientName: '',
+    clientPhone: '',
+    skippedMeasurements: false,
+    errors: {}
   }
 };
 
@@ -443,10 +494,10 @@ function renderDetail(product) {
               type="button"
               class="order-whatsapp-btn"
               id="desktop-order-btn"
-              aria-label="Order ${escapeHtml(product.name)} on WhatsApp"
+              aria-label="Continue to measurements for ${escapeHtml(product.name)}"
             >
-              ${ICONS.whatsapp}
-              <span>Order on WhatsApp</span>
+              <span>Continue</span>
+              ${ICONS.arrowRight}
             </button>
             <p class="cta-guarantee-note">Direct concierge with Master Tailor Ezekiel • Fast delivery in Nigeria & abroad</p>
           </div>
@@ -493,10 +544,10 @@ function renderDetail(product) {
           type="button"
           class="order-whatsapp-btn full-width"
           id="mobile-order-btn"
-          aria-label="Order ${escapeHtml(product.name)} on WhatsApp"
+          aria-label="Continue to measurements for ${escapeHtml(product.name)}"
         >
-          ${ICONS.whatsapp}
-          <span>Order on WhatsApp</span>
+          <span>Continue</span>
+          ${ICONS.arrowRight}
         </button>
       </div>
     </aside>
@@ -743,10 +794,14 @@ function selectDetailImage(index, product) {
   });
 }
 
-function selectSize(sz) {
+function selectSize(sz, product) {
   state.detail.selectedSize = sz;
   state.detail.sizeError = false;
   updateSizeSectionUI();
+
+  if (sz === 'Custom' && product) {
+    window.location.hash = `#measure/${product.id}?size=Custom`;
+  }
 }
 
 function updateSizeSectionUI() {
@@ -788,15 +843,9 @@ function handleOrderClick(product) {
     return;
   }
 
-  const pageUrl = window.location.href;
-  const whatsappUrl = buildWhatsAppUrl(WHATSAPP_PHONE, {
-    product: product.name,
-    size: state.detail.selectedSize,
-    price: product.price,
-    link: pageUrl
-  });
-
-  window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  window.location.hash = `#measure/${product.id}?size=${encodeURIComponent(
+    state.detail.selectedSize
+  )}`;
 }
 
 function bindDetailEvents(product) {
@@ -846,7 +895,7 @@ function bindDetailEvents(product) {
   document.querySelectorAll('.size-pill').forEach((pill) => {
     pill.onclick = () => {
       const sz = pill.dataset.size;
-      selectSize(sz);
+      selectSize(sz, product);
     };
   });
 
@@ -872,6 +921,930 @@ function bindDetailEvents(product) {
 }
 
 // -----------------------------------------------------------------------------
+// SCREEN 3: MEASUREMENTS ONBOARDING
+// -----------------------------------------------------------------------------
+
+function initMeasureState(productId, size) {
+  const current = state.measure;
+  if (current.productId === productId && current.size === size) {
+    return;
+  }
+
+  const saved = getSavedMeasurements();
+  const initialMeasurements = {
+    chest: '',
+    shoulder: '',
+    sleeve: '',
+    neck: '',
+    waist: '',
+    hip: '',
+    trouserLength: '',
+    kaftanLength: '',
+    height: ''
+  };
+
+  let hasSavedValues = false;
+  if (saved && saved.measurements) {
+    Object.keys(initialMeasurements).forEach((k) => {
+      if (saved.measurements[k] != null && String(saved.measurements[k]).trim() !== '') {
+        initialMeasurements[k] = String(saved.measurements[k]);
+        hasSavedValues = true;
+      }
+    });
+  }
+
+  state.measure = {
+    productId,
+    size: size || 'Custom',
+    step: 1,
+    unit: (saved && saved.unit) || 'in',
+    measurements: initialMeasurements,
+    fitPreference: (saved && saved.fitPreference) || 'Regular',
+    notes: (saved && saved.notes) || '',
+    clientName: (saved && saved.clientName) || '',
+    clientPhone: (saved && saved.clientPhone) || '',
+    skippedMeasurements: false,
+    errors: {},
+    hasSaved: Boolean(saved && (hasSavedValues || saved.clientName)),
+    savedNotice: hasSavedValues ? 'Loaded from your saved profile' : ''
+  };
+}
+
+function renderMeasureField(fieldId, unit, isCustom) {
+  const cfg = MEASUREMENT_CONFIG[fieldId];
+  const value = state.measure.measurements[fieldId] || '';
+  const error = state.measure.errors[fieldId] || '';
+  const range = cfg.ranges[unit] || cfg.ranges.in;
+  const isRequired = isCustom && !cfg.optional;
+  const placeholder =
+    (cfg.placeholders && cfg.placeholders[unit]) || (unit === 'in' ? '34' : '86');
+
+  return `
+    <div class="measure-field-group" data-field-group="${fieldId}">
+      <div class="measure-label-row">
+        <label for="measure-${fieldId}" class="measure-label">
+          ${escapeHtml(cfg.label)}
+          ${isRequired ? '<span class="required-badge" aria-label="required" title="Required for bespoke fit">*</span>' : '<span class="optional-tag">Optional</span>'}
+        </label>
+      </div>
+      <div class="measure-input-wrapper">
+        <input
+          type="text"
+          inputmode="decimal"
+          id="measure-${fieldId}"
+          name="${fieldId}"
+          class="measure-input ${error ? 'input-error' : ''}"
+          placeholder="e.g. ${placeholder}"
+          value="${escapeHtml(value)}"
+          aria-describedby="tip-${fieldId} error-${fieldId}"
+          aria-invalid="${error ? 'true' : 'false'}"
+        />
+        <span class="measure-unit-affix">${unit}</span>
+      </div>
+      <p class="measure-tip" id="tip-${fieldId}">${escapeHtml(cfg.tip)} <span class="measure-range-tip">(Typical: ${range.min}–${range.max} ${unit})</span></p>
+      <div class="measure-inline-error" id="error-${fieldId}" role="alert" ${error ? '' : 'hidden'}>
+        ${escapeHtml(error)}
+      </div>
+    </div>
+  `;
+}
+
+function renderMeasure(product) {
+  const images = getProductImages(product);
+  const activeImage = images[0] || '';
+  const { step, unit, size, measurements, fitPreference, notes, clientName, clientPhone, errors, hasSaved, savedNotice } =
+    state.measure;
+  const isCustom = size === 'Custom';
+
+  return `
+    <!-- Top Bar: Back, Title, Close -->
+    <header class="detail-top-bar measure-top-bar">
+      <div class="detail-top-bar-inner measure-top-bar-inner">
+        <button type="button" class="icon-button" id="measure-back-btn" aria-label="Go back">
+          ${ICONS.back}
+        </button>
+        <span class="detail-top-bar-title measure-top-bar-title">Measurements</span>
+        <a href="#product/${escapeHtml(product.id)}" class="icon-button" id="measure-close-btn" aria-label="Cancel and return to product">
+          ${ICONS.close}
+        </a>
+      </div>
+    </header>
+
+    <main class="page-container measure-page-container" id="main-content">
+      <div class="measure-panel">
+        <!-- Unified Product Header & Progress Card -->
+        <section class="measure-summary-card" aria-label="Product summary & onboarding progress">
+          <div class="measure-summary-top">
+            <img src="${escapeHtml(activeImage)}" alt="${escapeHtml(product.name)}" class="measure-summary-thumb" />
+            <div class="measure-summary-info">
+              <span class="measure-summary-category">${escapeHtml(product.category)}</span>
+              <h1 class="measure-summary-title">${escapeHtml(product.name)}</h1>
+              <div class="measure-summary-meta">
+                <span class="measure-summary-price">${escapeHtml(formatPrice(product.price))}</span>
+                <span class="measure-summary-size-tag ${isCustom ? 'custom-tag' : ''}">Size: <strong>${escapeHtml(size)}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="measure-progress-strip">
+            <div class="measure-progress-header">
+              <span class="measure-step-label">
+                ${
+                  step === 4
+                    ? 'Final Review & Confirm'
+                    : `Step ${step} of 3: ${
+                        step === 1
+                          ? 'Upper Body'
+                          : step === 2
+                          ? 'Lower Body & Length'
+                          : 'Fit & Details'
+                      }`
+                }
+              </span>
+              <span class="measure-step-fraction">
+                ${step === 4 ? 'Review' : `Step ${step} / 3`}
+              </span>
+            </div>
+            <div class="measure-progress-track" role="progressbar" aria-valuenow="${step === 4 ? 100 : step * 33}" aria-valuemin="0" aria-valuemax="100">
+              <div class="measure-progress-fill step-${step}"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Saved Measurements Banner -->
+        ${
+          hasSaved && step < 4
+            ? `
+          <aside class="measure-saved-banner" id="measure-saved-banner" aria-label="Saved measurements profile">
+            <div class="saved-banner-text">
+              <div class="saved-banner-title">
+                ${ICONS.tape}
+                <strong>Saved Profile Found</strong>
+              </div>
+              <p class="saved-banner-sub">${savedNotice || 'Use your saved body measurements for fast concierge ordering.'}</p>
+            </div>
+            <button type="button" class="btn-saved-action" id="use-saved-measurements-btn">
+              Use my saved measurements
+            </button>
+          </aside>
+        `
+            : ''
+        }
+
+        <!-- Step 1: Upper Body -->
+        ${
+          step === 1
+            ? `
+          <form class="measure-form" id="measure-step-form" novalidate>
+            <div class="measure-step-header">
+              <div class="step-title-block">
+                <h2 class="measure-section-title">Upper Body Measurements</h2>
+                <p class="measure-section-sub">
+                  Accurate upper torso measurements ensure a tailored drape. Fields marked with <span class="required-badge" aria-label="required">*</span> are required for custom fit.
+                </p>
+              </div>
+
+              <!-- Unit of Measure Toggle (cm/inches) -->
+              <div class="unit-toggle-wrapper">
+                <span class="unit-toggle-caption">Unit:</span>
+                <div class="unit-toggle-pills" role="radiogroup" aria-label="Measurement unit toggle">
+                  <button
+                    type="button"
+                    class="unit-toggle-pill ${unit === 'in' ? 'active' : ''}"
+                    data-unit="in"
+                    role="radio"
+                    aria-checked="${unit === 'in'}"
+                  >
+                    Inches (in)
+                  </button>
+                  <button
+                    type="button"
+                    class="unit-toggle-pill ${unit === 'cm' ? 'active' : ''}"
+                    data-unit="cm"
+                    role="radio"
+                    aria-checked="${unit === 'cm'}"
+                  >
+                    Centimeters (cm)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Two-Column Form Grid -->
+            <div class="measure-form-grid">
+              ${renderMeasureField('chest', unit, isCustom)}
+              ${renderMeasureField('shoulder', unit, isCustom)}
+              ${renderMeasureField('sleeve', unit, isCustom)}
+              ${renderMeasureField('neck', unit, isCustom)}
+            </div>
+
+            <!-- Bottom Action Row -->
+            <div class="measure-actions-row">
+              ${
+                !isCustom
+                  ? `
+                <button type="button" class="btn-secondary measure-btn-skip" id="step1-skip-btn">
+                  Skip, use standard size
+                </button>
+              `
+                  : ''
+              }
+              <button type="button" class="btn-primary measure-btn-next ${isCustom ? 'full-width' : ''}" id="step1-next-btn">
+                <span>Continue to Lower Body</span>
+                ${ICONS.arrowRight}
+              </button>
+            </div>
+
+            ${
+              isCustom
+                ? `
+              <p class="measure-bespoke-note">
+                ${ICONS.tape}
+                <span>Custom Size: measurements are required so Ezekiel can hand-craft this piece to your exact proportions.</span>
+              </p>
+            `
+                : ''
+            }
+          </form>
+        `
+            : ''
+        }
+
+        <!-- Step 2: Lower Body & Length -->
+        ${
+          step === 2
+            ? `
+          <form class="measure-form" id="measure-step-form" novalidate>
+            <div class="measure-step-header">
+              <div class="step-title-block">
+                <h2 class="measure-section-title">Lower Body & Garment Length</h2>
+                <p class="measure-section-sub">Waist, hips, and garment lengths determine trouser break and kaftan hemline.</p>
+              </div>
+
+              <!-- Unit of Measure Toggle (cm/inches) -->
+              <div class="unit-toggle-wrapper">
+                <span class="unit-toggle-caption">Unit:</span>
+                <div class="unit-toggle-pills" role="radiogroup" aria-label="Measurement unit toggle">
+                  <button
+                    type="button"
+                    class="unit-toggle-pill ${unit === 'in' ? 'active' : ''}"
+                    data-unit="in"
+                    role="radio"
+                    aria-checked="${unit === 'in'}"
+                  >
+                    Inches (in)
+                  </button>
+                  <button
+                    type="button"
+                    class="unit-toggle-pill ${unit === 'cm' ? 'active' : ''}"
+                    data-unit="cm"
+                    role="radio"
+                    aria-checked="${unit === 'cm'}"
+                  >
+                    Centimeters (cm)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Two-Column Form Grid -->
+            <div class="measure-form-grid">
+              ${renderMeasureField('waist', unit, isCustom)}
+              ${renderMeasureField('hip', unit, isCustom)}
+              ${renderMeasureField('trouserLength', unit, isCustom)}
+              ${renderMeasureField('kaftanLength', unit, isCustom)}
+            </div>
+
+            <!-- Bottom Action Row -->
+            <div class="measure-actions-row">
+              <button type="button" class="btn-secondary" id="step2-back-btn">
+                Back
+              </button>
+              ${
+                !isCustom
+                  ? `
+                <button type="button" class="btn-secondary measure-btn-skip" id="step2-skip-btn">
+                  Skip, use standard size
+                </button>
+              `
+                  : ''
+              }
+              <button type="button" class="btn-primary measure-btn-next" id="step2-next-btn">
+                <span>Continue to Details</span>
+                ${ICONS.arrowRight}
+              </button>
+            </div>
+          </form>
+        `
+            : ''
+        }
+
+        <!-- Step 3: Details & Contact -->
+        ${
+          step === 3
+            ? `
+          <form class="measure-form" id="measure-step-form" novalidate>
+            <div class="measure-step-header">
+              <div class="step-title-block">
+                <h2 class="measure-section-title">Fit Preferences & Client Details</h2>
+                <p class="measure-section-sub">Personalize your tailoring style and tell Ezekiel where to confirm your order.</p>
+              </div>
+            </div>
+
+            <div class="measure-details-stack">
+              <!-- Height (Optional) -->
+              <div class="measure-field-group">
+                <div class="measure-label-row">
+                  <label for="measure-height" class="measure-label">
+                    Total Height (${unit}) <span class="optional-tag">Optional</span>
+                  </label>
+                  <span class="measure-range-tag">${MEASUREMENT_CONFIG.height.ranges[unit].min}–${MEASUREMENT_CONFIG.height.ranges[unit].max} ${unit}</span>
+                </div>
+                <div class="measure-input-wrapper">
+                  <input
+                    type="text"
+                    inputmode="decimal"
+                    id="measure-height"
+                    name="height"
+                    class="measure-input ${errors.height ? 'input-error' : ''}"
+                    placeholder="e.g. ${unit === 'in' ? '70' : '178'}"
+                    value="${escapeHtml(measurements.height || '')}"
+                    aria-describedby="tip-height error-height"
+                    aria-invalid="${errors.height ? 'true' : 'false'}"
+                  />
+                  <span class="measure-unit-affix">${unit}</span>
+                </div>
+                <p class="measure-tip" id="tip-height">${escapeHtml(MEASUREMENT_CONFIG.height.tip)}</p>
+                <div class="measure-inline-error" id="error-height" role="alert" ${errors.height ? '' : 'hidden'}>
+                  ${escapeHtml(errors.height || '')}
+                </div>
+              </div>
+
+              <!-- Fit Preference Pills -->
+              <div class="measure-field-group">
+                <label id="fit-label" class="measure-label">Fit Preference</label>
+                <div class="fit-pills-row" role="radiogroup" aria-labelledby="fit-label">
+                  ${['Slim', 'Regular', 'Relaxed']
+                    .map(
+                      (fit) => `
+                    <button
+                      type="button"
+                      class="fit-pill ${fitPreference === fit ? 'active' : ''}"
+                      data-fit="${fit}"
+                      role="radio"
+                      aria-checked="${fitPreference === fit}"
+                    >
+                      ${fit}
+                    </button>
+                  `
+                    )
+                    .join('')}
+                </div>
+                <p class="measure-tip">Slim: tailored contour; Regular: standard classic drape; Relaxed: loose flowing ease.</p>
+              </div>
+
+              <!-- Special Notes (Optional) -->
+              <div class="measure-field-group">
+                <label for="measure-notes" class="measure-label">
+                  Special Notes & Adjustments <span class="optional-tag">Optional</span>
+                </label>
+                <textarea
+                  id="measure-notes"
+                  name="notes"
+                  class="measure-textarea"
+                  rows="3"
+                  placeholder="e.g. Extra 1 inch on sleeves, loose neckline, concealed side pocket, urgent wedding deadline..."
+                >${escapeHtml(notes)}</textarea>
+                <p class="measure-tip">Any personal adjustments or styling touches for Ezekiel.</p>
+              </div>
+
+              <!-- Client Full Name -->
+              <div class="measure-field-group">
+                <label for="measure-clientName" class="measure-label">
+                  Your Full Name <span class="required-badge">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="measure-clientName"
+                  name="clientName"
+                  autocomplete="name"
+                  class="measure-input ${errors.clientName ? 'input-error' : ''}"
+                  placeholder="e.g. Babatunde Adeyemi"
+                  value="${escapeHtml(clientName)}"
+                  aria-invalid="${errors.clientName ? 'true' : 'false'}"
+                />
+                <div class="measure-inline-error" id="error-clientName" role="alert" ${errors.clientName ? '' : 'hidden'}>
+                  ${escapeHtml(errors.clientName || '')}
+                </div>
+              </div>
+
+              <!-- WhatsApp Phone Number -->
+              <div class="measure-field-group">
+                <label for="measure-clientPhone" class="measure-label">
+                  WhatsApp Phone Number <span class="required-badge">*</span>
+                </label>
+                <input
+                  type="tel"
+                  inputmode="tel"
+                  id="measure-clientPhone"
+                  name="clientPhone"
+                  autocomplete="tel"
+                  class="measure-input ${errors.clientPhone ? 'input-error' : ''}"
+                  placeholder="+234 801 234 5678"
+                  value="${escapeHtml(clientPhone)}"
+                  aria-invalid="${errors.clientPhone ? 'true' : 'false'}"
+                />
+                <p class="measure-tip">Master Ezekiel will confirm measurements, fabric swatch photos & delivery updates here.</p>
+                <div class="measure-inline-error" id="error-clientPhone" role="alert" ${errors.clientPhone ? '' : 'hidden'}>
+                  ${escapeHtml(errors.clientPhone || '')}
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Action Row -->
+            <div class="measure-actions-row">
+              <button type="button" class="btn-secondary" id="step3-back-btn">
+                Back
+              </button>
+              <button type="button" class="btn-primary measure-btn-next" id="step3-next-btn">
+                <span>Review Order</span>
+                ${ICONS.arrowRight}
+              </button>
+            </div>
+          </form>
+        `
+            : ''
+        }
+
+        <!-- Step 4: Final Review Card -->
+        ${
+          step === 4
+            ? `
+          <div class="review-container" aria-label="Review order and measurements">
+            <div class="review-header-block">
+              <h2 class="measure-section-title">Review Your Order</h2>
+              <p class="measure-section-sub">Please verify your garment sizing and measurements before sending your order to Ezekiel on WhatsApp.</p>
+            </div>
+
+            <!-- Card 1: Product & Size -->
+            <div class="review-card">
+              <div class="review-card-header">
+                <h3 class="review-card-title">Garment & Fit</h3>
+                <a href="#product/${escapeHtml(product.id)}" class="review-edit-link">Change</a>
+              </div>
+              <div class="review-product-preview">
+                <img src="${escapeHtml(activeImage)}" alt="${escapeHtml(product.name)}" class="review-thumb" />
+                <div class="review-product-info">
+                  <h4 class="review-item-name">${escapeHtml(product.name)}</h4>
+                  <span class="review-item-price">${escapeHtml(formatPrice(product.price))}</span>
+                  <div class="review-size-pill-row">
+                    <span class="review-pill">Size: <strong>${escapeHtml(size)}</strong></span>
+                    <span class="review-pill">Fit: <strong>${escapeHtml(fitPreference)}</strong></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card 2: Client Contact Details -->
+            <div class="review-card">
+              <div class="review-card-header">
+                <h3 class="review-card-title">Client Contact</h3>
+                <button type="button" class="review-edit-link" data-goto-step="3">
+                  ${ICONS.edit}
+                  <span>Edit</span>
+                </button>
+              </div>
+              <dl class="review-dl">
+                <div class="review-dl-row">
+                  <dt>Full Name</dt>
+                  <dd>${escapeHtml(clientName || '—')}</dd>
+                </div>
+                <div class="review-dl-row">
+                  <dt>WhatsApp Phone</dt>
+                  <dd>${escapeHtml(clientPhone || '—')}</dd>
+                </div>
+                ${
+                  notes
+                    ? `
+                  <div class="review-dl-row">
+                    <dt>Special Notes</dt>
+                    <dd>${escapeHtml(notes)}</dd>
+                  </div>
+                `
+                    : ''
+                }
+              </dl>
+            </div>
+
+            <!-- Card 3: Measurements Summary -->
+            <div class="review-card">
+              <div class="review-card-header">
+                <h3 class="review-card-title">Body Measurements (${escapeHtml(unit)})</h3>
+                ${
+                  !state.measure.skippedMeasurements
+                    ? `
+                  <button type="button" class="review-edit-link" data-goto-step="1">
+                    ${ICONS.edit}
+                    <span>Edit</span>
+                  </button>
+                `
+                    : ''
+                }
+              </div>
+
+              ${
+                state.measure.skippedMeasurements
+                  ? `
+                <div class="review-skipped-box">
+                  <p class="review-skipped-title">Standard Size <strong>${escapeHtml(size)}</strong> Selected</p>
+                  <p class="review-skipped-sub">Custom measurements were skipped. Ezekiel will craft your garment using the standard Nigerian luxury ${escapeHtml(size)} sizing block.</p>
+                  <button type="button" class="review-inline-add-link" data-goto-step="1">Add custom measurements instead</button>
+                </div>
+              `
+                  : `
+                <div class="review-measurements-grid">
+                  ${[
+                    { id: 'chest', label: 'Chest' },
+                    { id: 'shoulder', label: 'Shoulder Width' },
+                    { id: 'sleeve', label: 'Sleeve Length' },
+                    { id: 'neck', label: 'Neck' },
+                    { id: 'waist', label: 'Waist' },
+                    { id: 'hip', label: 'Hip' },
+                    { id: 'trouserLength', label: 'Trouser Length' },
+                    { id: 'kaftanLength', label: 'Top / Kaftan Length' },
+                    { id: 'height', label: 'Height' }
+                  ]
+                    .map((item) => {
+                      const val = measurements[item.id];
+                      if (!val) return '';
+                      return `
+                        <div class="review-measure-cell">
+                          <span class="review-cell-label">${escapeHtml(item.label)}</span>
+                          <span class="review-cell-val">${escapeHtml(val)} ${escapeHtml(unit)}</span>
+                        </div>
+                      `;
+                    })
+                    .join('')}
+                </div>
+              `
+              }
+            </div>
+
+            <!-- Order Action Block -->
+            <div class="review-order-actions">
+              <button
+                type="button"
+                class="order-whatsapp-btn full-width review-main-cta"
+                id="send-measurements-whatsapp-btn"
+                aria-label="Send tailoring order to Ezekiel on WhatsApp"
+              >
+                ${ICONS.whatsapp}
+                <span>Send to Ezekiel on WhatsApp</span>
+              </button>
+
+              <button type="button" class="btn-secondary full-width" id="review-back-btn">
+                Back to Details
+              </button>
+
+              <p class="cta-guarantee-note">
+                Tapping opens WhatsApp with your prefilled measurements and order summary directly to Master Tailor Ezekiel.
+              </p>
+            </div>
+          </div>
+        `
+            : ''
+        }
+      </div>
+    </main>
+  `;
+}
+
+function bindMeasureEvents(product) {
+  const isCustom = state.measure.size === 'Custom';
+
+  // Back button in top bar
+  const backBtn = document.querySelector('#measure-back-btn');
+  if (backBtn) {
+    backBtn.onclick = (e) => {
+      e.preventDefault();
+      if (state.measure.step === 1) {
+        window.location.hash = `#product/${product.id}`;
+      } else {
+        state.measure.step--;
+        state.measure.errors = {};
+        render();
+        window.scrollTo(0, 0);
+      }
+    };
+  }
+
+  // Close button in top bar
+  const closeBtn = document.querySelector('#measure-close-btn');
+  if (closeBtn) {
+    closeBtn.onclick = (e) => {
+      e.preventDefault();
+      window.location.hash = `#product/${product.id}`;
+    };
+  }
+
+  // Unit toggle pills (cm / inches)
+  document.querySelectorAll('.unit-toggle-pill').forEach((btn) => {
+    btn.onclick = () => {
+      const targetUnit = btn.dataset.unit;
+      if (targetUnit === state.measure.unit) return;
+
+      const oldUnit = state.measure.unit;
+      state.measure.unit = targetUnit;
+
+      // Convert all populated measurement values
+      Object.keys(state.measure.measurements).forEach((key) => {
+        const val = state.measure.measurements[key];
+        if (val != null && String(val).trim() !== '') {
+          state.measure.measurements[key] = String(
+            convertMeasurement(val, oldUnit, targetUnit)
+          );
+        }
+      });
+
+      state.measure.errors = {};
+      render();
+    };
+  });
+
+  // Use my saved measurements button
+  const savedBtn = document.querySelector('#use-saved-measurements-btn');
+  if (savedBtn) {
+    savedBtn.onclick = (e) => {
+      e.preventDefault();
+      const saved = getSavedMeasurements();
+      if (saved) {
+        if (saved.unit) state.measure.unit = saved.unit;
+        if (saved.measurements) {
+          Object.keys(state.measure.measurements).forEach((k) => {
+            if (saved.measurements[k] != null) {
+              state.measure.measurements[k] = String(saved.measurements[k]);
+            }
+          });
+        }
+        if (saved.fitPreference) state.measure.fitPreference = saved.fitPreference;
+        if (saved.clientName) state.measure.clientName = saved.clientName;
+        if (saved.clientPhone) state.measure.clientPhone = saved.clientPhone;
+        if (saved.notes) state.measure.notes = saved.notes;
+
+        state.measure.savedNotice = 'Measurements successfully restored from profile!';
+        state.measure.errors = {};
+        render();
+      }
+    };
+  }
+
+  // Real-time measurement input binding & error clearing
+  document.querySelectorAll('.measure-input').forEach((input) => {
+    input.oninput = (e) => {
+      const fieldName = e.target.name;
+      const val = e.target.value;
+
+      if (fieldName === 'clientName') {
+        state.measure.clientName = val;
+      } else if (fieldName === 'clientPhone') {
+        state.measure.clientPhone = val;
+      } else {
+        state.measure.measurements[fieldName] = val;
+      }
+
+      if (state.measure.errors[fieldName]) {
+        delete state.measure.errors[fieldName];
+        input.classList.remove('input-error');
+        input.setAttribute('aria-invalid', 'false');
+        const errEl = document.querySelector(`#error-${fieldName}`);
+        if (errEl) {
+          errEl.setAttribute('hidden', '');
+          errEl.textContent = '';
+        }
+      }
+    };
+  });
+
+  // Notes textarea
+  const notesTextarea = document.querySelector('#measure-notes');
+  if (notesTextarea) {
+    notesTextarea.oninput = (e) => {
+      state.measure.notes = e.target.value;
+    };
+  }
+
+  // Fit pills
+  document.querySelectorAll('.fit-pill').forEach((pill) => {
+    pill.onclick = () => {
+      state.measure.fitPreference = pill.dataset.fit;
+      document.querySelectorAll('.fit-pill').forEach((p) => {
+        const isActive = p.dataset.fit === state.measure.fitPreference;
+        p.classList.toggle('active', isActive);
+        p.setAttribute('aria-checked', isActive ? 'true' : 'false');
+      });
+    };
+  });
+
+  // Skip buttons (Step 1 & Step 2 for standard sizes)
+  const skipBtn1 = document.querySelector('#step1-skip-btn');
+  if (skipBtn1) {
+    skipBtn1.onclick = () => {
+      state.measure.skippedMeasurements = true;
+      state.measure.errors = {};
+      if (state.measure.clientName && state.measure.clientPhone) {
+        state.measure.step = 4;
+      } else {
+        state.measure.step = 3;
+      }
+      render();
+      window.scrollTo(0, 0);
+    };
+  }
+
+  const skipBtn2 = document.querySelector('#step2-skip-btn');
+  if (skipBtn2) {
+    skipBtn2.onclick = () => {
+      state.measure.skippedMeasurements = true;
+      state.measure.errors = {};
+      if (state.measure.clientName && state.measure.clientPhone) {
+        state.measure.step = 4;
+      } else {
+        state.measure.step = 3;
+      }
+      render();
+      window.scrollTo(0, 0);
+    };
+  }
+
+  // Step 1 Next
+  const step1Next = document.querySelector('#step1-next-btn');
+  if (step1Next) {
+    step1Next.onclick = (e) => {
+      e.preventDefault();
+      const res = validateMeasurementsStep(
+        1,
+        state.measure.measurements,
+        state.measure.unit,
+        isCustom
+      );
+
+      if (!res.isValid) {
+        state.measure.errors = res.errors;
+        render();
+        const firstErr = document.querySelector('.input-error');
+        if (firstErr) firstErr.focus();
+        return;
+      }
+
+      state.measure.errors = {};
+      state.measure.step = 2;
+      render();
+      window.scrollTo(0, 0);
+    };
+  }
+
+  // Step 2 Back & Next
+  const step2Back = document.querySelector('#step2-back-btn');
+  if (step2Back) {
+    step2Back.onclick = (e) => {
+      e.preventDefault();
+      state.measure.errors = {};
+      state.measure.step = 1;
+      render();
+      window.scrollTo(0, 0);
+    };
+  }
+
+  const step2Next = document.querySelector('#step2-next-btn');
+  if (step2Next) {
+    step2Next.onclick = (e) => {
+      e.preventDefault();
+      const res = validateMeasurementsStep(
+        2,
+        state.measure.measurements,
+        state.measure.unit,
+        isCustom
+      );
+
+      if (!res.isValid) {
+        state.measure.errors = res.errors;
+        render();
+        const firstErr = document.querySelector('.input-error');
+        if (firstErr) firstErr.focus();
+        return;
+      }
+
+      state.measure.errors = {};
+      state.measure.step = 3;
+      render();
+      window.scrollTo(0, 0);
+    };
+  }
+
+  // Step 3 Back & Next
+  const step3Back = document.querySelector('#step3-back-btn');
+  if (step3Back) {
+    step3Back.onclick = (e) => {
+      e.preventDefault();
+      state.measure.errors = {};
+      state.measure.step = 2;
+      render();
+      window.scrollTo(0, 0);
+    };
+  }
+
+  const step3Next = document.querySelector('#step3-next-btn');
+  if (step3Next) {
+    step3Next.onclick = (e) => {
+      e.preventDefault();
+      const res = validateMeasurementsStep(
+        3,
+        {
+          height: state.measure.measurements.height,
+          clientName: state.measure.clientName,
+          clientPhone: state.measure.clientPhone
+        },
+        state.measure.unit,
+        isCustom
+      );
+
+      if (!res.isValid) {
+        state.measure.errors = res.errors;
+        render();
+        const firstErr = document.querySelector('.input-error');
+        if (firstErr) firstErr.focus();
+        return;
+      }
+
+      state.measure.errors = {};
+      state.measure.step = 4;
+      render();
+      window.scrollTo(0, 0);
+    };
+  }
+
+  // Review step edit buttons
+  document.querySelectorAll('[data-goto-step]').forEach((btn) => {
+    btn.onclick = () => {
+      const targetStep = Number(btn.dataset.gotoStep);
+      state.measure.step = targetStep;
+      if (targetStep === 1) state.measure.skippedMeasurements = false;
+      state.measure.errors = {};
+      render();
+      window.scrollTo(0, 0);
+    };
+  });
+
+  // Review step Back
+  const reviewBack = document.querySelector('#review-back-btn');
+  if (reviewBack) {
+    reviewBack.onclick = (e) => {
+      e.preventDefault();
+      state.measure.step = 3;
+      state.measure.errors = {};
+      render();
+      window.scrollTo(0, 0);
+    };
+  }
+
+  // Final Review WhatsApp Send
+  const sendWhatsAppBtn = document.querySelector('#send-measurements-whatsapp-btn');
+  if (sendWhatsAppBtn) {
+    sendWhatsAppBtn.onclick = (e) => {
+      e.preventDefault();
+
+      // Persist in localStorage so returning clients get measurements prefilled
+      persistSavedMeasurements({
+        unit: state.measure.unit,
+        measurements: state.measure.measurements,
+        fitPreference: state.measure.fitPreference,
+        clientName: state.measure.clientName,
+        clientPhone: state.measure.clientPhone,
+        notes: state.measure.notes,
+        updatedAt: Date.now()
+      });
+
+      const pageUrl = `${window.location.origin}${window.location.pathname}#product/${product.id}`;
+      const whatsappUrl = buildWhatsAppMeasurementsUrl(WHATSAPP_PHONE, {
+        productName: product.name,
+        productPrice: product.price,
+        size: state.measure.size,
+        measurements: state.measure.measurements,
+        unit: state.measure.unit,
+        fitPreference: state.measure.fitPreference,
+        notes: state.measure.notes,
+        clientName: state.measure.clientName,
+        clientPhone: state.measure.clientPhone,
+        pageUrl,
+        skippedMeasurements: state.measure.skippedMeasurements
+      });
+
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    };
+  }
+}
+
+// -----------------------------------------------------------------------------
 // ROUTER & INITIALIZATION
 // -----------------------------------------------------------------------------
 
@@ -880,6 +1853,40 @@ function render() {
   if (!app) return;
 
   const hash = window.location.hash || '';
+
+  // Route: #/measure/<productId>?size=<size>
+  if (hash.startsWith('#measure/')) {
+    const raw = hash.replace('#measure/', '').trim();
+    const [productId, queryString] = raw.split('?');
+    const params = new URLSearchParams(queryString || '');
+    const size = params.get('size') || 'Custom';
+
+    const product = state.products.find((p) => p.id === productId);
+    if (!product) {
+      app.innerHTML = renderNotFound();
+      const notFoundBackBtn = document.querySelector('#not-found-back-btn');
+      if (notFoundBackBtn) {
+        notFoundBackBtn.onclick = (e) => {
+          e.preventDefault();
+          window.location.hash = '#shop';
+        };
+      }
+      const notFoundTopBackBtn = document.querySelector('#not-found-back-top-btn');
+      if (notFoundTopBackBtn) {
+        notFoundTopBackBtn.onclick = (e) => {
+          e.preventDefault();
+          window.location.hash = '#shop';
+        };
+      }
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    initMeasureState(product.id, size);
+    app.innerHTML = renderMeasure(product);
+    bindMeasureEvents(product);
+    return;
+  }
 
   if (hash.startsWith('#product/')) {
     const productId = hash.replace('#product/', '').trim();
