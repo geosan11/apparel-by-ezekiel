@@ -90,7 +90,9 @@ During local development (`import.meta.env.DEV`), reviewers can test the complet
 
 Backend project ref: `izgmbygjstkstzmveuct`
 
-- **Migrations**: [`supabase/migrations/001_products_and_photos.sql`](file:///workspace/apparel2/repo/supabase/migrations/001_products_and_photos.sql)
+- **Migrations**:
+  - Initial catalog & storage: [`supabase/migrations/001_products_and_photos.sql`](file:///workspace/apparel2/repo/supabase/migrations/001_products_and_photos.sql)
+  - Making days & orders schema: [`supabase/migrations/002_making_days_and_orders.sql`](file:///workspace/apparel2/repo/supabase/migrations/002_making_days_and_orders.sql)
 - **Seed Data**: [`supabase/seed.sql`](file:///workspace/apparel2/repo/supabase/seed.sql)
 - **Environment Configuration**:
   - Copy `.env.example` to `.env.local` (keep `.env.local` gitignored):
@@ -99,6 +101,42 @@ Backend project ref: `izgmbygjstkstzmveuct`
     VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
     ```
 - **Fallback Guarantee**: Storefront fetches live published products ordered by `sort_order` and `created_at`. If environment variables are missing or network requests fail, the storefront automatically falls back to [`src/products.json`](file:///workspace/apparel2/repo/src/products.json) without breaking the customer shopping experience.
+
+---
+
+## OPay Full-Price Checkout & Edge Functions Setup
+
+Apparel by Ezekiel supports instant full-price payment via the official **OPay Cashier (Hosted Checkout) API** alongside the direct WhatsApp bespoke concierge.
+
+### 1. Payment Flow
+1. **Initiation**: Customer completes measurements review and selects **"Pay ₦X with OPay"**.
+2. **Backend Validation**: The browser calls Supabase Edge Function `opay-create-payment` (Deno). The function reads the authoritative garment price directly from the database (never trusting the client price), generates a unique order reference (e.g. `ABE-1718000000-XYZ`), inserts a pending order into `public.orders` (amount stored in kobo), and requests an OPay checkout session.
+3. **Checkout Redirection**: OPay returns a hosted checkout URL (`cashierUrl`). The customer is redirected to complete payment via debit card, direct bank transfer, or USSD.
+4. **Webhook & Verification**: Upon payment completion, OPay sends a callback to `opay-webhook`. The webhook verifies the incoming `HMAC-SHA512` signature against `OPAY_SECRET_KEY`, re-queries OPay's query payment status endpoint (`/api/v1/international/cashier/status`), and updates the order status to `paid` or `failed`.
+5. **Confirmation**: Customer returns to `#/order/<reference>` displaying payment confirmation status and a direct WhatsApp button prefilled with their order reference to connect with Master Ezekiel.
+
+### 2. Edge Function Secrets Configuration
+
+Edge functions read credentials strictly through environment variables. **Never commit secrets to git repositories.**
+
+To configure production or staging credentials in Supabase, execute:
+
+```bash
+supabase secrets set \
+  OPAY_MERCHANT_ID="<YOUR_OPAY_MERCHANT_ID>" \
+  OPAY_PUBLIC_KEY="<YOUR_OPAY_PUBLIC_KEY>" \
+  OPAY_SECRET_KEY="<YOUR_OPAY_SECRET_KEY>" \
+  OPAY_ENV="sandbox" \
+  SUPABASE_SERVICE_ROLE_KEY="<YOUR_SUPABASE_SERVICE_ROLE_KEY>"
+```
+
+*(Note: Do not run this command locally without active Supabase project credentials. For live production, switch `OPAY_ENV="live"`).*
+
+### 3. Orders Security & Row Level Security (RLS)
+- The `public.orders` table has **Row Level Security (RLS) enabled** by default.
+- Direct public table read and write access is disabled.
+- Public customer order tracking is exclusively served through the security-definer function `public.get_order_status(lookup_reference)`, which returns only non-sensitive order metadata (`status`, `amount`, `product_name`), safeguarding client phone numbers and bespoke body measurements.
+- Ezekiel and authorized admins can view and manage all incoming orders through the **"Orders"** tab in the Owner Admin portal (`#/admin`).
 
 ---
 

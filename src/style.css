@@ -3677,3 +3677,759 @@ img {
   }
 }
 
+/* ==========================================================================
+   Making Days & OPay Checkout Styles
+   ========================================================================== */
+
+/* Detail & Review Step: Making Days Badges */
+.detail-making-days-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background-color: #f7f5f0;
+  border: 1px solid #e7e3da;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: #1f1e1d;
+  margin-top: 10px;
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  width: fit-content;
+  max-width: fit-content;
+  align-self: flex-start;
+}
+
+.detail-making-days-badge svg {
+  color: #71717a;
+  flex-shrink: 0;
+}
+
+.review-making-days-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #f0ede6;
+  border: 1px solid var(--color-border);
+  color: #222222 !important;
+}
+
+.review-making-days-pill svg {
+  color: #444444;
+  flex-shrink: 0;
+}
+
+.review-action-timeline-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background-color: #f7f5f0;
+  border: 1px solid #e5e1d8;
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  color: #27272a;
+  margin-bottom: 12px;
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.review-action-timeline-chip svg {
+  color: #71717a;
+  flex-shrink: 0;
+}
+
+/* Review Step CTAs: OPay Primary + WhatsApp Secondary */
+.review-opay-btn {
+  background-color: #0a0a0a !important;
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  font-weight: 600;
+  font-size: 0.96rem;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 14px rgba(10, 10, 10, 0.15);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.review-opay-btn:hover {
+  background-color: #1a1a1a !important;
+  transform: translateY(-1px);
+}
+
+.review-opay-btn:active {
+  transform: scale(0.98);
+}
+
+.review-secondary-whatsapp {
+  background-color: #ffffff !important;
+  color: #0a0a0a !important;
+  border: 1px solid #d4d0c8 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.review-secondary-whatsapp:hover {
+  background-color: #faf9f6 !important;
+  border-color: #0a0a0a !important;
+}
+
+.review-secondary-whatsapp svg {
+  color: #25D366 !important;
+  flex-shrink: 0;
+}
+
+.measure-optional-badge {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #71717a;
+  margin-left: 4px;
+}
+
+.btn-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spinner-rot 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spinner-rot {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Order Return Status Page (#/order/<reference>)
+   ========================================================================== */
+.order-status-page-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+.order-status-layout {
+  width: 100%;
+}
+
+.order-status-card {
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 32px 22px;
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.order-status-icon-wrap {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.order-status-icon-wrap.status-paid {
+  background-color: #ecfdf5;
+  color: #059669;
+  border: 1.5px solid #a7f3d0;
+}
+
+.order-status-icon-wrap.status-pending {
+  background-color: #fffbeb;
+  color: #d97706;
+  border: 1.5px solid #fde68a;
+}
+
+.order-status-icon-wrap.status-failed {
+  background-color: #fef2f2;
+  color: #dc2626;
+  border: 1.5px solid #fecaca;
+}
+
+.order-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 14px;
+}
+
+.order-status-badge.status-paid {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.order-status-badge.status-pending {
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.order-status-badge.status-failed {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.order-status-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-text-main);
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+}
+
+.order-status-subtitle {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* Artisanal Commission Progress Stepper */
+.order-artisanal-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18px 0 24px;
+  padding: 12px 14px;
+  background-color: #faf9f6;
+  border: 1px solid #ebe8e1;
+  border-radius: var(--radius-md);
+}
+
+.order-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  text-align: center;
+}
+
+.order-step-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #e4e2dd;
+  color: #71717a;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.order-step-item.active .order-step-dot {
+  background-color: #0a0a0a;
+  color: #ffffff;
+}
+
+.order-step-name {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #71717a;
+  line-height: 1.2;
+}
+
+.order-step-item.active .order-step-name {
+  color: #0a0a0a;
+}
+
+.order-step-line {
+  height: 2px;
+  background-color: #e4e2dd;
+  flex: 0 0 20px;
+  margin-top: -14px;
+}
+
+.order-step-line.active {
+  background-color: #0a0a0a;
+}
+
+.order-ref-box {
+  background-color: #faf9f6;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.order-ref-label {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #71717a;
+  letter-spacing: 0.04em;
+}
+
+.order-ref-copy-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.order-ref-val {
+  font-family: monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0a0a0a;
+}
+
+.order-ref-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #ffffff;
+  border: 1px solid #d4d0c8;
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #0a0a0a;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.order-ref-copy-btn:hover {
+  background-color: #0a0a0a;
+  color: #ffffff;
+  border-color: #0a0a0a;
+}
+
+.order-summary-box {
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 16px 0;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.order-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 0.88rem;
+}
+
+.order-summary-label {
+  color: var(--color-text-muted);
+}
+
+.order-summary-value {
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.order-summary-price {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0a0a0a;
+}
+
+.order-status-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.order-status-whatsapp-btn {
+  text-decoration: none;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.order-status-guarantee {
+  font-size: 0.76rem;
+  color: #71717a;
+  line-height: 1.4;
+  margin-top: 14px;
+}
+
+.order-status-store-link {
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--color-text-main);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background-color: rgba(10, 10, 10, 0.05);
+}
+
+.order-status-loading {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-muted);
+}
+
+.order-status-loading .btn-spinner {
+  border-color: rgba(10, 10, 10, 0.2);
+  border-top-color: #0a0a0a;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 16px;
+}
+
+/* ==========================================================================
+   Admin Navigation Tabs (Garments vs Orders)
+   ========================================================================== */
+.admin-tab-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #27272a;
+  padding-bottom: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #a1a1aa;
+  background-color: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  min-height: 44px;
+}
+
+.admin-tab-btn:hover {
+  color: #ffffff;
+  background-color: #1f1f23;
+}
+
+.admin-tab-btn.active {
+  color: #ffffff;
+  background-color: #27272a;
+  border-color: #3f3f46;
+}
+
+.admin-tab-pill-badge {
+  background-color: #f59e0b;
+  color: #09090b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+}
+
+/* Admin Edit Form: Days to make preview */
+.admin-days-preview {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #a1a1aa;
+  background-color: #27272a;
+  padding: 3px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.admin-days-preview.admin-badge-invalid {
+  background-color: #451a1a !important;
+  color: #f87171 !important;
+}
+
+.admin-optional-badge {
+  font-size: 0.74rem;
+  font-weight: 400;
+  color: #71717a;
+}
+
+/* ==========================================================================
+   Admin Orders Tab Grid & Cards
+   ========================================================================== */
+.admin-orders-section {
+  width: 100%;
+}
+
+.admin-orders-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-order-card {
+  background-color: #18181b;
+  border: 1px solid #27272a;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.admin-order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #27272a;
+  padding-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-order-ref-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-order-ref {
+  font-family: monospace;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.03em;
+}
+
+.admin-order-date {
+  font-size: 0.78rem;
+  color: #a1a1aa;
+}
+
+.admin-badge-paid {
+  background-color: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+}
+
+.admin-badge-pending {
+  background-color: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.admin-badge-failed {
+  background-color: rgba(239, 68, 68, 0.16);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.admin-order-product-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.admin-order-prod-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.admin-order-prod-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-order-size-badge {
+  font-size: 0.78rem;
+  color: #d4d4d8;
+  background-color: #27272a;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.admin-order-turnaround {
+  font-size: 0.78rem;
+  color: #a1a1aa;
+}
+
+.admin-order-price-box {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.admin-order-price {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.admin-order-customer-box {
+  background-color: #202024;
+  border: 1px solid #2c2c30;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-order-customer-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-order-customer-name {
+  font-size: 0.92rem;
+  color: #ffffff;
+}
+
+.admin-order-customer-contact {
+  font-size: 0.8rem;
+  color: #a1a1aa;
+}
+
+.admin-order-wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #15803d;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  min-height: 38px;
+  transition: background-color 0.15s ease;
+}
+
+.admin-order-wa-btn:hover {
+  background-color: #166534;
+}
+
+.admin-order-schedule-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.84rem;
+  color: #fbbf24;
+}
+
+.admin-order-schedule-icon {
+  display: flex;
+  align-items: center;
+  color: #fbbf24;
+}
+
+.admin-order-schedule-text strong {
+  margin-left: 4px;
+  color: #ffffff;
+}
+
+.admin-order-measurements-box {
+  background-color: #121214;
+  border: 1px solid #232327;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.admin-order-measurements-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #71717a;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.admin-order-unit-pill {
+  background-color: #27272a;
+  color: #d4d4d8;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.admin-order-measurements-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-order-measure-pill {
+  background-color: #27272a;
+  color: #e4e4e7;
+  font-size: 0.78rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #3f3f46;
+}
+
+.admin-order-no-measure {
+  font-size: 0.8rem;
+  color: #71717a;
+  font-style: italic;
+}
+
+/* Responsive adjustments for mobile admin stats */
+@media (max-width: 600px) {
+  .admin-orders-layout .admin-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 16px !important;
+  }
+  .admin-orders-layout .admin-stat-card {
+    padding: 10px 4px !important;
+    text-align: center;
+  }
+  .admin-orders-layout .admin-stat-number {
+    font-size: 1.25rem !important;
+  }
+  .admin-orders-layout .admin-stat-label {
+    font-size: 0.62rem !important;
+    letter-spacing: 0.02em !important;
+    line-height: 1.2 !important;
+  }
+}
+
