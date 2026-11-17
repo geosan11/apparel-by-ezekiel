@@ -4153,6 +4153,61 @@ img {
   border-radius: var(--radius-pill);
 }
 
+/* Compact admin tab bar and category pills on desktop */
+@media (min-width: 601px) {
+  .admin-tab-nav {
+    gap: 6px;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+  }
+
+  .admin-tab-btn {
+    min-height: 36px;
+    height: 36px;
+    padding: 0 14px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1;
+    gap: 6px;
+    border-radius: 6px;
+    width: auto;
+    flex: 0 0 auto;
+    letter-spacing: 0.01em;
+  }
+
+  .admin-tab-btn svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
+
+  .admin-tab-pill-badge {
+    font-size: 0.68rem;
+    padding: 1px 6px;
+    line-height: 1.2;
+  }
+
+  .admin-category-pills {
+    gap: 6px;
+    padding-bottom: 2px;
+  }
+
+  .admin-pill {
+    min-height: 36px;
+    height: 36px;
+    padding: 0 14px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    flex: 0 0 auto;
+    letter-spacing: 0.01em;
+  }
+}
+
 /* Admin Edit Form: Days to make preview */
 .admin-days-preview {
   font-size: 0.8rem;
