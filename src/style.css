@@ -4415,16 +4415,20 @@ img {
 @media (max-width: 600px) {
   .admin-orders-layout .admin-stats-grid {
     display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 8px !important;
-    margin-bottom: 16px !important;
+    margin-bottom: 14px !important;
   }
   .admin-orders-layout .admin-stat-card {
-    padding: 10px 4px !important;
+    padding: 8px 6px !important;
+    gap: 2px !important;
+    min-width: 0;
     text-align: center;
   }
-  .admin-orders-layout .admin-stat-number {
-    font-size: 1.25rem !important;
+  .admin-orders-layout .admin-stat-number,
+  .admin-orders-layout .admin-stat-value {
+    font-size: 1.1rem !important;
+    line-height: 1.1 !important;
   }
   .admin-orders-layout .admin-stat-label {
     font-size: 0.62rem !important;
@@ -4433,3 +4437,25 @@ img {
   }
 }
 
+
+/* Compact admin stat cards on phones */
+@media (max-width: 600px) {
+  .admin-stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+  }
+  .admin-stat-card {
+    padding: 8px 6px !important;
+    gap: 2px !important;
+    min-width: 0;
+  }
+  .admin-stat-label {
+    font-size: 0.62rem !important;
+    letter-spacing: 0.04em !important;
+  }
+  .admin-stat-value {
+    font-size: 1.15rem !important;
+    line-height: 1.1 !important;
+  }
+}
