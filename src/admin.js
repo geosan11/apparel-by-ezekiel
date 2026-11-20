@@ -776,15 +776,15 @@ function renderAdminOrdersView() {
     <!-- Metric Stat Cards for Orders -->
     <div class="admin-stats-grid">
       <div class="admin-stat-card">
-        <span class="admin-stat-label">Total Commissions</span>
+        <span class="admin-stat-label">Orders</span>
         <span class="admin-stat-value">${totalOrders}</span>
       </div>
       <div class="admin-stat-card">
-        <span class="admin-stat-label">Paid via OPay</span>
+        <span class="admin-stat-label">Paid</span>
         <span class="admin-stat-value admin-stat-highlight">${paidOrders}</span>
       </div>
       <div class="admin-stat-card">
-        <span class="admin-stat-label">Pending Verification</span>
+        <span class="admin-stat-label">Pending</span>
         <span class="admin-stat-value">${pendingOrders}</span>
       </div>
     </div>
