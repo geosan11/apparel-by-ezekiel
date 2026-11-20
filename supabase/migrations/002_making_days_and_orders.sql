@@ -1,5 +1,5 @@
 -- Migration 002: Add making_days to products and create orders table with OPay checkout support
--- Note: DO NOT apply or run automatically; to be reviewed and deployed via Supabase CLI
+-- Applied to izgmbygjstkstzmveuct on 2026-11-17 (with set_updated_at helper added)
 
 -- 1. Add making_days to public.products (nullable integer, 1 to 90 days)
 alter table public.products
@@ -37,6 +37,18 @@ comment on column public.orders.amount is 'Total order amount in kobo (Naira * 1
 create index if not exists orders_reference_idx on public.orders (reference);
 create index if not exists orders_status_idx on public.orders (status);
 create index if not exists orders_created_at_idx on public.orders (created_at desc);
+
+-- Helper trigger function for updated_at (did not exist in 001)
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
 
 -- Trigger for orders updated_at
 drop trigger if exists set_orders_updated_at on public.orders;
